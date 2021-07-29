@@ -16,8 +16,8 @@ class NonStationaryEnv(Wrapper):
         self.counter = 0
         self.default_target_vel = 1.5
         self.fix_reward_vel = self.unwrapped.spec.id.startswith('Hopper') or self.unwrapped.spec.id.startswith('HalfCheetah')
-        self.wind = [-4,0,0,0,0,0]  #-4
-        self.no_wind = [0,0,0,0,0,0]
+        self.wind = [-4, 0, 0, 0, 0, 0]  # -4
+        self.no_wind = [0, 0, 0, 0, 0, 0]
 
     @property
     def current_task(self):
@@ -46,7 +46,7 @@ class NonStationaryEnv(Wrapper):
             force = self.no_wind
 
         for part in self.unwrapped.sim.model._body_name2id.values():
-            self.unwrapped.sim.data.xfrc_applied[part,:] = force
+            self.unwrapped.sim.data.xfrc_applied[part, :] = force
 
         next_obs, reward, done, info = self.env.step(action)
         info['task'] = self.current_task

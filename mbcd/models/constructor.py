@@ -1,8 +1,9 @@
 import numpy as np
 import tensorflow as tf
 
-from drl_cd.models.fc import FC
-from drl_cd.models.bnn import BNN
+from mbcd.models.fc import FC
+from mbcd.models.bnn import BNN
+# changed lines
 
 def construct_model(name, obs_dim=11, act_dim=3, rew_dim=1, hidden_dim=200, num_networks=7, num_elites=5, session=None):
 	print('[ BNN ] Observation dim {} | Action dim: {} | Hidden dim: {}'.format(obs_dim, act_dim, hidden_dim))
@@ -17,6 +18,7 @@ def construct_model(name, obs_dim=11, act_dim=3, rew_dim=1, hidden_dim=200, num_
 	model.finalize(tf.train.AdamOptimizer, {"learning_rate": 0.001})
 	return model
 
+
 def format_samples_for_training(samples):
 	obs = samples['observations']
 	act = samples['actions']
@@ -27,9 +29,11 @@ def format_samples_for_training(samples):
 	outputs = np.concatenate((rew, delta_obs), axis=-1)
 	return inputs, outputs
 
+
 def reset_model(model):
 	model_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=model.name)
 	model.sess.run(tf.initialize_vars(model_vars))
+
 
 if __name__ == '__main__':
 	model = construct_model('a')
