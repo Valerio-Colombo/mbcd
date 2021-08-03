@@ -54,8 +54,8 @@ class NonStationaryEnv(Wrapper):
         if self.fix_reward_vel:
             posafter = self.unwrapped.sim.data.qpos[0]
             forward_vel = (posafter - posbefore) / self.unwrapped.dt
-            reward -= forward_vel # remove this term
 
+            # reward -= forward_vel # remove this term
             reward += -1 * abs(forward_vel - target_vel)
 
         self.counter += 1

@@ -42,6 +42,7 @@ tf.set_random_seed(SEED)
 
 
 def main(config):
+    sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 
     model = SAC(CustomSACPolicy,
                 env=config['env'],
