@@ -605,7 +605,7 @@ class SAC(OffPolicyRLModel):
                     mean_reward = round(float(np.mean(episode_rewards[-101:-1])), 1)
 
                 num_episodes = len(episode_rewards)
-                # Display training infos
+                # Display training info
                 if self.verbose >= 1 and done and log_interval is not None and len(episode_rewards) % log_interval == 0:
                     fps = int(step / (time.time() - start_time))
                     logger.logkv("rollout_length", self.rollout_length)
@@ -634,14 +634,14 @@ class SAC(OffPolicyRLModel):
             
             return self
 
-    def set_rollout_length(self):
+    def set_rollout_length(self):  # rl = "rollout"
         mins, maxs, minrl, maxrl = self.rollout_schedule
         if self.deepMBCD.counter <= mins:
             y = 1
         else:
-            dx = (self.deepMBCD.counter - mins) / (maxs - mins)
-            dx = min(dx, 1)
-            y = int(dx * (maxrl - minrl) + minrl)
+            dx = (self.deepMBCD.counter - mins) / (maxs - mins)  # (4 - 1) / (6 - 1) = 0.6
+            dx = min(dx, 1)  # 0.6
+            y = int(dx * (maxrl - minrl) + minrl)  # 0.6 * (1 - 1) + 1
 
         # Augment replay buffer size
         if y != self.rollout_length:

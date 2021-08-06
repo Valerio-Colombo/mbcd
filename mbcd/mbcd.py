@@ -33,7 +33,7 @@ class MBCD:
         self.changed = False
         self.step = 0
 
-        self.num_models = 1
+        self.num_models = 1  # number of model in mixture model
         self.current_model = 0
         self.steps_per_context = {0: 0}
         self.models = {0: self._build_model(0)}
@@ -107,7 +107,7 @@ class MBCD:
         true_output = np.concatenate(([reward], next_obs))[None]
 
         preds = []
-        if self.changed:
+        if self.changed:  # Reset to 0 MCUSUM statistics if model is changed
             self.S = {m: 0.0 for m in range(self.num_models)}
             self.S[-1] = 0.0
 
@@ -172,7 +172,7 @@ class MBCD:
         d['s_uniform'] = self.S[-1]
         self.logger.log(d)
 
-        if self.step % 50000 == 0:
+        if self.step % 50000 == 0:  # save results every 50000 steps
             if self.test_mode:
                     self.logger.save('results/' + self.run_id + 'H{}-14'.format(self.threshold))
             else:

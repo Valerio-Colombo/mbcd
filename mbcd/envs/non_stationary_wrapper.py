@@ -1,10 +1,10 @@
 from gym import Wrapper
 from collections import deque
 import numpy as np
+from experiments.experiments_enum import ExpType
 
 
 class NonStationaryEnv(Wrapper):
-
     def __init__(self, env, change_freq=40000, tasks=['normal', 'joint-malfunction', 'wind', 'velocity']):
         super(NonStationaryEnv, self).__init__(env)
         self.tasks = deque(tasks)
@@ -16,7 +16,7 @@ class NonStationaryEnv(Wrapper):
         self.counter = 0
         self.default_target_vel = 1.5
         self.fix_reward_vel = self.unwrapped.spec.id.startswith('Hopper') or self.unwrapped.spec.id.startswith('HalfCheetah')
-        self.wind = [-4, 0, 0, 0, 0, 0]  # -4
+        self.wind = [-4, 0, 0, 0, 0, 0]  # -4 --- 3D coord + rotation ??? opposite force on X(horizontal) axis
         self.no_wind = [0, 0, 0, 0, 0, 0]
 
     @property
@@ -61,7 +61,7 @@ class NonStationaryEnv(Wrapper):
         self.counter += 1
 
         return next_obs, reward, done, info
-    
+
     def reset(self, **kwargs):
         return self.env.reset(**kwargs)
 
