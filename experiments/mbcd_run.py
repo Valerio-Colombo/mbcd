@@ -68,14 +68,14 @@ def main(config):
     if args.algo == 'sac':
         model.save('weights/'+'sacfinalpolicy')
     else:
-        model.deepRLCD.save_current()
-        model.deepRLCD.save_models()
+        model.deepMBCD.save_current()  # model.deepRLCD.save_current()
+        model.deepMBCD.save_models()  # model.deepRLCD.save_models()
 
 if __name__ == '__main__':
 
     if args.env == 'halfcheetah':
         config = {
-                'env': NonStationaryEnv(gym.envs.make('HalfCheetah-v2'), change_freq=40000),
+                'env': NonStationaryEnv(gym.envs.make('HalfCheetah-v2'), change_freq=1000),  # change_freq = 40000
                 'rollout_schedule': [20000,50000,1,1],
                 'batch_size': 256,
                 'gradient_steps': 20,
@@ -88,7 +88,7 @@ if __name__ == '__main__':
                 'dynamics_memory_size': 100000,
                 'cusum_threshold': 100,
                 'run_id':'{}-halfcheetah-ns-paper{}'.format(args.algo, str(SEED)),
-                'total_timesteps': 480000
+                'total_timesteps': 12000  # 480000
         }
 
 

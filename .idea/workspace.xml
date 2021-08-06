@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="604e7849-1962-45f6-b7f7-8b5616da858a" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/mbcd.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/mbcd.iml" afterDir="false" />
+    <list default="true" id="604e7849-1962-45f6-b7f7-8b5616da858a" name="Default Changelist" comment="Path tweek and pycharm adjustment">
+      <change afterPath="$PROJECT_DIR$/experiments/experiments_enum.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mbcd/envs/envs_enum.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/experiments/mbcd_run.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/mbcd_run.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mbcd/envs/non_stationary_wrapper.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/envs/non_stationary_wrapper.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mbcd/mbcd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/mbcd.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mbcd/sac_mbcd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/sac_mbcd.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -13,16 +15,35 @@
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
     <option name="ROOT_SYNC" value="DONT_SYNC" />
   </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
+  </component>
   <component name="ProjectId" id="1vw2nO0c3bOCMneYwzY0cvKCHQo" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/experiments/mbcd_run.py" />
@@ -73,12 +94,35 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="results_reader" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="mbcd" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/results/results_reader.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <list>
       <item itemvalue="Python.mbcd_run" />
       <item itemvalue="Python.gym_test" />
+      <item itemvalue="Python.results_reader" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.results_reader" />
         <item itemvalue="Python.gym_test" />
       </list>
     </recent_temporary>
@@ -95,6 +139,14 @@
       <option name="presentableId" value="Default" />
       <updated>1627458996926</updated>
     </task>
+    <task id="LOCAL-00001" summary="Path tweek and pycharm adjustment">
+      <created>1628006209269</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1628006209269</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -108,5 +160,10 @@
       </map>
     </option>
     <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+    <MESSAGE value="Path tweek and pycharm adjustment" />
+    <option name="LAST_COMMIT_MESSAGE" value="Path tweek and pycharm adjustment" />
   </component>
 </project>
