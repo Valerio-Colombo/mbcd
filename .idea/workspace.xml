@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="604e7849-1962-45f6-b7f7-8b5616da858a" name="Default Changelist" comment="Path tweek and pycharm adjustment">
-      <change afterPath="$PROJECT_DIR$/experiments/experiments_enum.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mbcd/envs/envs_enum.py" afterDir="false" />
+    <list default="true" id="604e7849-1962-45f6-b7f7-8b5616da858a" name="Default Changelist" comment="Added enumeration for tasks and task sequences">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/experiments/experiments_enum.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/experiments_enum.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/experiments/mbcd_run.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/mbcd_run.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mbcd/envs/envs_enum.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/envs/envs_enum.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mbcd/envs/non_stationary_wrapper.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/envs/non_stationary_wrapper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mbcd/mbcd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/mbcd.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mbcd/sac_mbcd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/sac_mbcd.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -146,8 +144,40 @@
       <option name="project" value="LOCAL" />
       <updated>1628006209269</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Directory fix">
+      <created>1628208965027</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1628208965027</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Added some comments">
+      <created>1628209059878</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1628209059878</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Added enumeration for tasks and task sequences">
+      <created>1628209085834</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1628209085834</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ID_ORDER">
+      <list>
+        <option value="Default.Root" />
+        <option value="Default.Author" />
+        <option value="Default.Date" />
+        <option value="Default.Subject" />
+        <option value="Space.CommitStatus" />
+      </list>
+    </option>
   </component>
   <component name="Vcs.Log.Tabs.Properties">
     <option name="TAB_STATES">
@@ -164,6 +194,9 @@
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
     <MESSAGE value="Path tweek and pycharm adjustment" />
-    <option name="LAST_COMMIT_MESSAGE" value="Path tweek and pycharm adjustment" />
+    <MESSAGE value="Directory fix" />
+    <MESSAGE value="Added some comments" />
+    <MESSAGE value="Added enumeration for tasks and task sequences" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added enumeration for tasks and task sequences" />
   </component>
 </project>
