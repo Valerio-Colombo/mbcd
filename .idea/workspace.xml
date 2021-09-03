@@ -1,12 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="604e7849-1962-45f6-b7f7-8b5616da858a" name="Default Changelist" comment="Added enumeration for tasks and task sequences">
+    <list default="true" id="604e7849-1962-45f6-b7f7-8b5616da858a" name="Default Changelist" comment="Fix to Non-Stationary Wrapper and drifting environments">
+      <change afterPath="$PROJECT_DIR$/drift/drift_manager.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/drift/logs/Drift_Log-9_3_18_7_2/drift_log_0.npy" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/experiments/experiments_enum.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/experiments_enum.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/experiments/mbcd_run.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/mbcd_run.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mbcd/envs/envs_enum.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/envs/envs_enum.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mbcd/envs/non_stationary_wrapper.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/envs/non_stationary_wrapper.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mbcd/mbcd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/mbcd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mbcd/models/fake_env.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/models/fake_env.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mbcd/sac_mbcd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/sac_mbcd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mbcd/utils/dataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/utils/dataset.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mbcd/utils/logger.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/utils/logger.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,6 +51,7 @@
     <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="TODO_SCOPE" value="All Places" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/experiments/mbcd_run.py" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
@@ -71,6 +79,7 @@
       <method v="2" />
     </configuration>
     <configuration name="mbcd_run" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
+      <output_file path="/media/valerio/93f88e81-c907-4ae8-99d0-345b3c02d308/valerio/MBCD/logs/Console_Output/CO_1" is_save="true" />
       <module name="mbcd" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -165,7 +174,14 @@
       <option name="project" value="LOCAL" />
       <updated>1628209085834</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Fix to Non-Stationary Wrapper and drifting environments">
+      <created>1628378833906</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1628378833906</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -197,6 +213,18 @@
     <MESSAGE value="Directory fix" />
     <MESSAGE value="Added some comments" />
     <MESSAGE value="Added enumeration for tasks and task sequences" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added enumeration for tasks and task sequences" />
+    <MESSAGE value="Fix to Non-Stationary Wrapper and drifting environments" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix to Non-Stationary Wrapper and drifting environments" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/mbcd/sac_mbcd.py</url>
+          <line>545</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

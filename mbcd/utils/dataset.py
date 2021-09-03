@@ -32,6 +32,32 @@ class Dataset:
         inds = np.random.choice(self.size, batch_size, replace=replace)
         return self.obs_buf[inds], self.acts_buf[inds], self.rews_buf[inds], self.next_obs_buf[inds], self.done_buf[inds]
 
+    def sample_chunks(self, chunk_size):  # TODO implement chunk sampling
+        chunk_num = int(self.size / chunk_size)
+
+        chunk_arr_input = np.zeros((chunk_num,
+                                    chunk_size,
+                                    self.obs_buf.shape[-1]+self.acts_buf.shape[-1]),
+                                   dtype=np.float32)  # s,a
+        chunk_arr_output = np.zeros((chunk_num,
+                                     chunk_size,
+                                     self.obs_buf.shape[-1]+1),
+                                    dtype=np.float32)  # r,s'
+
+        for c in range(chunk_num):
+            chunk_start = self.ptr-1-chunk_size*c
+            indices = range(chunk_start, chunk_start-chunk_size, -1)
+
+            l_obs = np.take(self.obs_buf, indices, mode='wrap', axis=0)  # [chunk_size, obs_dim]
+            l_act = np.take(self.acts_buf, indices, mode='wrap', axis=0)  # [chunk_size, act_dim]
+            chunk_arr_input[c, 0:chunk_size] = np.concatenate((l_obs, l_act), axis=-1)
+
+            l_rew = np.take(self.rews_buf, indices, mode='wrap')[None].T  # [chunk_size, 1]
+            l_next_obs = np.take(self.next_obs_buf, indices, mode='wrap', axis=0)  # [chunk_size, obs_dim]
+            chunk_arr_output[c, 0:chunk_size] = np.concatenate((l_rew, l_next_obs), axis=-1)
+
+        return chunk_num, chunk_arr_input, chunk_arr_output
+
     def to_train_batch(self, normalization=False):
         inds = np.arange(self.size)
 

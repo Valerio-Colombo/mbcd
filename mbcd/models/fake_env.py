@@ -2,8 +2,10 @@ import numpy as np
 import tensorflow as tf
 import pdb
 
+
 def alive_bonus(self, z, pitch):
     return +1 if z > 0.8 and abs(pitch) < 1.0 else -1
+
 
 def termination_fn_hopper_roboschool(obs, act, next_obs):
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
@@ -14,6 +16,7 @@ def termination_fn_hopper_roboschool(obs, act, next_obs):
     done = ~not_done
     done = done[:,None]
     return done
+
 
 def termination_fn_hopper(obs, act, next_obs):
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
@@ -28,6 +31,7 @@ def termination_fn_hopper(obs, act, next_obs):
     done = ~not_done
     done = done[:,None]
     return done
+
 
 def termination_fn_false(obs, act, next_obs):
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
@@ -51,6 +55,7 @@ class FakeEnv:
         else:
             raise NotImplementedError
          """
+
     def _get_logprob(self, x, means, variances):
         '''
             x : [ batch_size, obs_dim + 1 ]
@@ -93,7 +98,7 @@ class FakeEnv:
         else:
             ensemble_samples = ensemble_model_means + np.random.normal(size=ensemble_model_means.shape) * ensemble_model_stds
 
-        #### choose one model from ensemble
+        # choose one model from ensemble TODO: Check this part for ensemble management
         num_models, batch_size, _ = ensemble_model_means.shape
         model_inds = self.model.random_inds(batch_size)
         batch_inds = np.arange(0, batch_size)

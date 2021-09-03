@@ -8,6 +8,15 @@ class ExpType(enum.Enum):
                          EnvType.Normal, EnvType.Joint_Malfunction, EnvType.Wind, EnvType.Velocity,
                          EnvType.Wind, EnvType.Normal, EnvType.Velocity, EnvType.Joint_Malfunction],
                "change_freq": 40000}
+    Base_Switch_Test = {"sim": SimType.HalfCheetah,
+                        "tasks": [EnvType.Normal, EnvType.Joint_Malfunction, EnvType.Wind],
+                        "change_freq": 30000}
+    Base_Drift_Switch_Test = {"sim": SimType.HalfCheetah,
+                              "tasks": [EnvType.Normal, EnvType.Joint_Malfunction_Drift, EnvType.Joint_Malfunction],
+                              "change_freq": 30000}
+    Base_Wind_Test = {"sim": SimType.HalfCheetah,
+                      "tasks": [EnvType.Wind],
+                      "change_freq": 40000}
     Drift_End_HC = {"sim": SimType.HalfCheetah,
                     "tasks": [EnvType.Normal, EnvType.Joint_Malfunction, EnvType.Wind, EnvType.Velocity,
                               EnvType.Normal, EnvType.Joint_Malfunction, EnvType.Wind, EnvType.Velocity,
@@ -21,3 +30,6 @@ class ExpType(enum.Enum):
     Drift_Test_Velocity = {"sim": SimType.HalfCheetah,
                            "tasks": [EnvType.Velocity_Drift, EnvType.Velocity_Drift],
                            "change_freq": 1000}
+    Drift_Test_All = {"sim": SimType.HalfCheetah,
+                      "tasks": [EnvType.Joint_Malfunction_Drift, EnvType.Wind_Drift, EnvType.Velocity_Drift],
+                      "change_freq": 1000}

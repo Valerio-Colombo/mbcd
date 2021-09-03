@@ -29,8 +29,6 @@ class NonStationaryEnv(Wrapper):
         pos_before = self.unwrapped.sim.data.qpos[0]
         env_parameters = self.env_task.get_params()
 
-        print("----------Velocity: {}----------".format(env_parameters["wind"]))
-
         action = env_parameters["malfunction_mask"] * action
 
         for part in self.unwrapped.sim.model._body_name2id.values():
@@ -46,6 +44,9 @@ class NonStationaryEnv(Wrapper):
 
             # reward -= forward_vel # remove this term
             reward += -1 * abs(forward_vel - env_parameters["target_velocity"])
+
+        if not(self.counter % 100):
+            print("Step :{}".format(self.counter))
 
         self.counter += 1
 

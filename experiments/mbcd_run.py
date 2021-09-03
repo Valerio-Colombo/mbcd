@@ -73,11 +73,13 @@ def main(config):
         model.deepMBCD.save_current()
         model.deepMBCD.save_models()
 
+
 if __name__ == '__main__':
 
     if args.env == 'halfcheetah':
+        tasks = ExpType.Base_Drift_Switch_Test
         config = {
-                'env': NonStationaryEnv(gym.envs.make('HalfCheetah-v2'), tasks=ExpType.Drift_Test_Velocity),
+                'env': NonStationaryEnv(gym.envs.make('HalfCheetah-v2'), tasks=tasks),
                 'rollout_schedule': [20000, 50000, 1, 1],
                 'batch_size': 256,
                 'gradient_steps': 20,
@@ -90,7 +92,7 @@ if __name__ == '__main__':
                 'dynamics_memory_size': 100000,
                 'cusum_threshold': 100,
                 'run_id':'{}-halfcheetah-ns-paper{}'.format(args.algo, str(SEED)),
-                'total_timesteps': ExpType.Base_HC.value["change_freq"] * len(ExpType.Base_HC.value["tasks"])  # 480000
+                'total_timesteps': tasks.value["change_freq"] * len(tasks.value["tasks"])
         }
 
 

@@ -14,6 +14,7 @@ from stable_baselines.common.buffers import ReplayBuffer
 from stable_baselines.sac.policies import SACPolicy
 from stable_baselines import logger
 
+from drift.drift_manager import DriftHandler
 from mbcd.mbcd import MBCD
 from mbcd.models.fake_env import FakeEnv
 from mbcd.utils.logger import Logger
@@ -89,7 +90,7 @@ class SAC(OffPolicyRLModel):
                 seed=None, 
                 n_cpu_tf_sess=None,
                 mbpo=True,
-                rollout_schedule=[20e3,100e3,1,5], 
+                rollout_schedule=[20e3, 100e3, 1, 5],
                 mbcd=True,
                 max_std=0.5,
                 num_stds=2,
@@ -161,7 +162,12 @@ class SAC(OffPolicyRLModel):
         self.mbcd = mbcd
         self.rollout_length = 1
         self.rollout_schedule = rollout_schedule
-        self.model_train_freq = 250
+        self.model_train_freq = 250  # frequency at we update models parameters. Corresponds to F in the paper
+
+        self.model_drift_chunk_size = 50
+        self.model_drift_freq = 500
+        self.model_drift_threshold = 0
+
         if _init_setup_model:
             self.setup_model()
         
@@ -177,6 +183,9 @@ class SAC(OffPolicyRLModel):
                                     max_std=max_std,
                                     num_stds=num_stds,
                                     run_id=run_id)
+
+        self.driftManager = DriftHandler()
+
     @property
     def model_buffer_size(self):
         return int(self.rollout_length * 1000 * 100000 / self.model_train_freq)  # think about this...
@@ -526,9 +535,15 @@ class SAC(OffPolicyRLModel):
                     if (changed and self.deepMBCD.counter > 10) or (self.deepMBCD.counter % self.model_train_freq == 0):
                         if not self.deepMBCD.test_mode:
                             self.deepMBCD.train()
+
                         if self.deepMBCD.counter >= 5000:
                             self.set_rollout_length()
                             self.rollout_model()
+
+                    if (self.deepMBCD.counter % self.model_drift_freq == 0) and (self.deepMBCD.counter >= self.model_drift_threshold):
+                        log_prob_chunks = self.deepMBCD.calculate_logprob_chunks(self.model_drift_chunk_size)
+                        self.driftManager.save_drift_log(log_prob_chunks)
+                        print("Drift log saved")
 
                     # Store transition in the replay buffer.
                     if self.deepMBCD.counter < 5000:
@@ -634,7 +649,7 @@ class SAC(OffPolicyRLModel):
             
             return self
 
-    def set_rollout_length(self):  # rl = "rollout"
+    def set_rollout_length(self):  # s = "step" rl = "rollout"
         mins, maxs, minrl, maxrl = self.rollout_schedule
         if self.deepMBCD.counter <= mins:
             y = 1
@@ -649,9 +664,9 @@ class SAC(OffPolicyRLModel):
             self._next_idx = len(self.replay_buffer)
             self.replay_buffer._maxsize = self.model_buffer_size
 
-    def rollout_model(self):
+    def rollout_model(self):  # Simulated rollouts
         # Planning
-        for _ in range(10):  # 4 samples of 25000 instead of 1 of 100000 to not allocate all gpu memory
+        for _ in range(10):  # 10 samples of 10000 instead of 1 of 100000 to not allocate all gpu memory
             obs, _, _, _, _ = self.deepMBCD.memory.sample(10000)
             fake_env = FakeEnv(self.deepMBCD.models[self.deepMBCD.current_model], self.env.spec.id)
             for plan_step in range(self.rollout_length):

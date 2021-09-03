@@ -26,9 +26,9 @@ class Env:
 
     """
     Parameters:
-        malfunction_mask
-        velocity
-        wind
+        malfunction_mask:   array[] coefficient for every actuator. 1 don't modify action
+        velocity:           scalar
+        wind:               array[6] 3D force + 3D torque
     """
     def _init_parameters(self, sim_type, env_type):
         param_dict = {}
@@ -59,23 +59,23 @@ class Env:
 
             elif env_type == EnvType.Velocity:
                 param_dict["malfunction_mask"] = np.ones(sim_type.value["action_dim"])
-                param_dict["target_velocity"] = 2.0
+                param_dict["target_velocity"] = 2.5
                 param_dict["wind"] = [0, 0, 0, 0, 0, 0]
 
                 env_parameters_gen["malfunction_mask_0"] = self.param_generator(1)
                 env_parameters_gen["malfunction_mask_1"] = self.param_generator(1)
-                env_parameters_gen["target_velocity"] = self.param_generator(2.0)
+                env_parameters_gen["target_velocity"] = self.param_generator(2.5)
                 env_parameters_gen["wind_0"] = self.param_generator(0)
 
             elif env_type == EnvType.Wind:
                 param_dict["malfunction_mask"] = np.ones(sim_type.value["action_dim"])
                 param_dict["target_velocity"] = 1.5
-                param_dict["wind"] = [-4, 0, 0, 0, 0, 0]
+                param_dict["wind"] = [-6, 0, 0, 0, 0, 0]
 
                 env_parameters_gen["malfunction_mask_0"] = self.param_generator(1)
                 env_parameters_gen["malfunction_mask_1"] = self.param_generator(1)
                 env_parameters_gen["target_velocity"] = self.param_generator(1.5)
-                env_parameters_gen["wind_0"] = self.param_generator(-4)
+                env_parameters_gen["wind_0"] = self.param_generator(-6)
 
             else:  # Drifting environments
                 param_dict["malfunction_mask"] = np.ones(sim_type.value["action_dim"])
@@ -83,22 +83,22 @@ class Env:
                 param_dict["wind"] = [0, 0, 0, 0, 0, 0]
 
                 if env_type == EnvType.Joint_Malfunction_Drift:
-                    env_parameters_gen["malfunction_mask_0"] = self.param_generator_drift(1, -1)
-                    env_parameters_gen["malfunction_mask_1"] = self.param_generator_drift(1, -1)
+                    env_parameters_gen["malfunction_mask_0"] = self.param_generator_drift(1, 0)
+                    env_parameters_gen["malfunction_mask_1"] = self.param_generator_drift(1, 0)
                     env_parameters_gen["target_velocity"] = self.param_generator(1.5)
                     env_parameters_gen["wind_0"] = self.param_generator(0)
 
                 if env_type == EnvType.Velocity_Drift:
                     env_parameters_gen["malfunction_mask_0"] = self.param_generator(1)
                     env_parameters_gen["malfunction_mask_1"] = self.param_generator(1)
-                    env_parameters_gen["target_velocity"] = self.param_generator_drift(1.5, 2.0)
+                    env_parameters_gen["target_velocity"] = self.param_generator_drift(1.5, 2.5)
                     env_parameters_gen["wind_0"] = self.param_generator(0)
 
                 if env_type == EnvType.Wind_Drift:
                     env_parameters_gen["malfunction_mask_0"] = self.param_generator(1)
                     env_parameters_gen["malfunction_mask_1"] = self.param_generator(1)
                     env_parameters_gen["target_velocity"] = self.param_generator(1.5)
-                    env_parameters_gen["wind_0"] = self.param_generator_drift(0, -4)
+                    env_parameters_gen["wind_0"] = self.param_generator_drift(0, -6)
 
         return param_dict, env_parameters_gen
 
@@ -112,9 +112,8 @@ class Env:
 
     def param_generator_drift(self, start_val, end_val):
         d_val = end_val - start_val
-        if d_val != 0:
-            for internal_counter in range(self.change_freq):
-                yield start_val + ((internal_counter / self.change_freq) * d_val)
+        for internal_counter in range(self.change_freq):
+            yield start_val + ((internal_counter / self.change_freq) * d_val)
 
     def param_generator(self, val):
         for internal_counter in range(self.change_freq):
