@@ -25,12 +25,15 @@ from experiments.experiments_enum import ExpType
 class CustomSACPolicy(FeedForwardPolicy):
     def __init__(self, *args, **kwargs):
         super(CustomSACPolicy, self).__init__(*args, **kwargs, layers=[256, 256], feature_extraction="mlp")  # 64,64
-#register_policy('CustomSACPolicy', CustomSACPolicy)
+# register_policy('CustomSACPolicy', CustomSACPolicy)
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-seed', dest='seed', required=False, type=int, help="Seed\n", default=0)      
 parser.add_argument('-algo', dest='algo', required=True, type=str, help="Algo [mbcd, mbpo, sac]\n")
-parser.add_argument('-env', dest='env', required=False, type=str, help="Env [halfcheetah, pusher]", default='halfcheetah')                
+parser.add_argument('-env', dest='env', required=False, type=str, help="Env [halfcheetah, pusher]", default='halfcheetah')
+parser.add_argument('-load', dest='load', required=False, type=bool, help="Load pre-trained [True, False]", default=False)
+parser.add_argument('-gif', dest='gif', required=False, type=bool, help="Save gifs [True, False]", default=False)
 args = parser.parse_args()
 assert args.algo in ['mbcd', 'mbpo', 'sac']
 mbcd = args.algo == 'mbcd'
@@ -64,7 +67,9 @@ def main(config):
                 cusum_threshold=config['cusum_threshold'],
                 run_id=config['run_id'],
                 tensorboard_log='./logs/',
-                seed=SEED)
+                seed=SEED,
+                load_pre_trained_model=args.load,
+                save_gifs=args.gif)
 
     model.learn(total_timesteps=config['total_timesteps'], tb_log_name='mbcd-test')
     if args.algo == 'sac':

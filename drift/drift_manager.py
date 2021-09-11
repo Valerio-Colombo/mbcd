@@ -1,5 +1,8 @@
 import numpy as np
+
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.pipeline import make_pipeline
 
 import datetime
 import os
@@ -22,17 +25,49 @@ class DriftHandler:
 
         self.save_counter = 0
 
-    def save_drift_log(self, log_prob_chunks):
-        filename = 'drift_log_' + str(self.save_counter)
+    def save_drift_log(self, log_prob_chunks, filename_suffix=""):
+        if filename_suffix == "":
+            filename = 'drift_log_' + str(self.save_counter)
+        else:
+            filename = 'drift_log_' + filename_suffix
+
         filename_path = os.path.join(self.save_path, filename)
         np.save(file=filename_path, arr=log_prob_chunks)
 
         self.save_counter += 1
-'''
-    def update_drift_model(self, log_prob_chunks):
-        # TODO return loss function?/update model based on predictions
 
+    @staticmethod
+    def predict_future_performance(l_arr):
+        num_model = l_arr.shape[-1]
+        num_chunks = l_arr.shape[0]
+        num_features = 6
 
-    def predict_future_performance(self, chunks):
-        # TODO implement regression
-'''
+        x = np.arange(num_chunks)
+
+        y_flip = np.empty_like(l_arr)
+        for i in range(num_model):
+            y_flip[:, i] = np.flip(l_arr[:, i])
+
+        poly = PolynomialFeatures(num_features)
+        phi = poly.fit_transform(x[:, np.newaxis])
+        proto_H = np.matmul(np.linalg.inv(np.matmul(phi.transpose(), phi)), phi.transpose())
+
+        w = np.zeros([num_features+1, num_model])
+
+        fut_pred_p = np.zeros([y_flip.shape[-1]])
+
+        """
+        poly_model = make_pipeline(PolynomialFeatures(6),  # 6 is very good
+                                   LinearRegression())
+
+        # y_fit_p = np.zeros([1000, y_flip.shape[-1]])
+        fut_pred_p = np.zeros([y_flip.shape[-1]])
+
+        for i in range(y_flip.shape[-1]):
+            poly_model.fit(x[:, np.newaxis], y_flip[:, i])
+            # y_fit_p[:, i] = poly_model.predict(x_fit[:, np.newaxis])
+            fut_step = np.array([x[-1] + 1])[None]
+            fut_pred_p[i] = poly_model.predict(fut_step)
+        """
+
+        return fut_pred_p

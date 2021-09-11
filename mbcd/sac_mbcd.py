@@ -98,7 +98,9 @@ class SAC(OffPolicyRLModel):
                 n_layers_dynamics=4,
                 dynamics_memory_size=100000,
                 cusum_threshold=100,
-                run_id='test'):
+                run_id='test',
+                load_pre_trained_model=False,
+                save_gifs=False):
 
         super(SAC, self).__init__(policy=policy, env=env, replay_buffer=None, verbose=verbose,
                                   policy_base=SACPolicy, requires_vec_env=False, policy_kwargs=policy_kwargs,
@@ -164,9 +166,12 @@ class SAC(OffPolicyRLModel):
         self.rollout_schedule = rollout_schedule
         self.model_train_freq = 250  # frequency at we update models parameters. Corresponds to F in the paper
 
-        self.model_drift_chunk_size = 50
-        self.model_drift_freq = 500
+        self.model_drift_chunk_size = 250
+        self.model_drift_freq = 1000
         self.model_drift_threshold = 0
+        self.model_drift_window_length = 20000
+
+        self.ep_num = 0
 
         if _init_setup_model:
             self.setup_model()
@@ -185,6 +190,12 @@ class SAC(OffPolicyRLModel):
                                     run_id=run_id)
 
         self.driftManager = DriftHandler()
+
+        self.load_pre_trained_model = load_pre_trained_model
+        if self.load_pre_trained_model:
+            self.deepMBCD.load(num_models=1, load_policy=True)  # load only normal model for now TODO make multi model loading
+
+        self.save_gifs = save_gifs
 
     @property
     def model_buffer_size(self):
@@ -487,7 +498,15 @@ class SAC(OffPolicyRLModel):
                 assert action.shape == self.env.action_space.shape
 
                 new_obs, reward, done, info = self.env.step(unscaled_action)
-                #frames.append(self.env.render(mode='rgb_array'))
+                frames.append(self.env.render(mode='rgb_array'))
+
+                if done and self.save_gifs:
+                    filename_gif = "Half_cheetah_" + str(self.ep_num) + ".gif"
+                    save_frames_as_gif(frames, filename=filename_gif)
+                    print("Gif saved successfully")
+
+                    self.ep_num += 1
+                    frames = []
 
                 self.num_timesteps += 1
 
@@ -528,7 +547,7 @@ class SAC(OffPolicyRLModel):
                     elif self.deepMBCD.counter < 40000:
                         self.model_train_freq = 250
                     elif self.deepMBCD.counter < 60000:
-                        self.model_train_freq = 5000
+                        self.model_train_freq = 500  # 5000
                     else:
                         self.model_train_freq = 2000
 
@@ -541,8 +560,10 @@ class SAC(OffPolicyRLModel):
                             self.rollout_model()
 
                     if (self.deepMBCD.counter % self.model_drift_freq == 0) and (self.deepMBCD.counter >= self.model_drift_threshold):
-                        log_prob_chunks = self.deepMBCD.calculate_logprob_chunks(self.model_drift_chunk_size)
-                        self.driftManager.save_drift_log(log_prob_chunks)
+                        log_prob_chunks = self.deepMBCD.calculate_logprob_chunks(self.model_drift_chunk_size, self.model_drift_window_length)
+
+                        suffix = str(self.deepMBCD.counter) + "_" + str(self.deepMBCD.current_model)
+                        self.driftManager.save_drift_log(log_prob_chunks, filename_suffix=suffix)
                         print("Drift log saved")
 
                     # Store transition in the replay buffer.

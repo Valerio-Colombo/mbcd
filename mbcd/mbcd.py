@@ -73,6 +73,10 @@ class MBCD:
         mean = np.mean(means, axis=0)  # [1, 18]
         variance = (np.mean(means**2 + variances, axis=0) - mean**2) +1e-6  # [1,18]
 
+        a = k*np.log(2*np.pi)
+        b = np.log(variance).sum(-1)
+        c = (np.power(x-mean, 2)/variance).sum(-1)
+
         ## [ num_networks, batch_size ]
         log_prob = -1/2 * (k*np.log(2*np.pi) + np.log(variance).sum(-1) + (np.power(x-mean, 2)/variance).sum(-1))  # [1,]
 
@@ -131,8 +135,8 @@ class MBCD:
 
         return log_prob_arr
 
-    def calculate_logprob_chunks(self, chunk_size):
-        chunk_num, inputs, outputs = self.memory.sample_chunks(chunk_size)
+    def calculate_logprob_chunks(self, chunk_size, window_length):
+        chunk_num, inputs, outputs = self.memory.sample_chunks(chunk_size, window_length)
         log_prob_arr = np.zeros((chunk_num, 5))  # TODO remove hardcoded value for num_network
 
         for c in range(chunk_num):
@@ -142,19 +146,13 @@ class MBCD:
 
                 obs = inputs[c, s, :(inputs.shape[-1]-self.action_dim)]  # TODO check value precision, float32!
                 means[:, :, 1:] += obs  # TODO Check correctness
-                true_output = outputs[c, s]
+                true_output = outputs[c, s][None]
 
                 log_prob_arr[c] += self.get_logprob_separated(true_output, means, variances)  # [1, num_model]
 
             log_prob_arr[c] = log_prob_arr[c] / chunk_size
 
         return log_prob_arr
-
-    def update_drift_model(self, chunk_size):
-        log_prob_arr = self.calculate_logprob_chunks(chunk_size)  # [chunk_num, num_ens_model]
-
-
-        return 1
 
     def update_metrics(self, obs, action, reward, next_obs, done):
         obs = obs[None]
@@ -340,9 +338,9 @@ class MBCD:
 
     def save_current(self):
         if self.sac is not None:
-            self.sac.save('weights/'+self.run_id+'pi'+str(self.current_model))
-        self.save_dataset(self.current_model)
-        self.save_model(self.current_model)
+            self.sac.save('weights/'+self.run_id+'pi'+str(self.current_model))  # save SAC
+        self.save_dataset(self.current_model)  # Save transition + rewards
+        self.save_model(self.current_model)  # Save env model
     
     def save_model(self, i):
         self.models[i].save_weights()

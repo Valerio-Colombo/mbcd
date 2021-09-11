@@ -2,10 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
 
+
 def save_frames_as_gif(frames, path='./', filename='gym_animation.gif'):
     bla = 80
 
-    #Mess with this to change frame size
+    # Mess with this to change frame size
     plt.figure(figsize=(frames[0].shape[1] / bla, frames[0].shape[0] / bla), dpi=100)
 
     patch = plt.imshow(frames[0])
@@ -15,8 +16,10 @@ def save_frames_as_gif(frames, path='./', filename='gym_animation.gif'):
     def animate(i):
         patch.set_data(frames[i])
 
-    anim = animation.FuncAnimation(plt.gcf(), animate, frames = len(frames), interval=0)
+    anim = animation.FuncAnimation(plt.gcf(), animate, frames=len(frames), interval=0)
+    print("Saving gif...")
     anim.save(path + filename, writer='pillow', fps=20)
+
 
 def linear_schedule(initial_value):
     """

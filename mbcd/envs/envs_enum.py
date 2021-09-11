@@ -83,8 +83,8 @@ class Env:
                 param_dict["wind"] = [0, 0, 0, 0, 0, 0]
 
                 if env_type == EnvType.Joint_Malfunction_Drift:
-                    env_parameters_gen["malfunction_mask_0"] = self.param_generator_drift(1, 0)
-                    env_parameters_gen["malfunction_mask_1"] = self.param_generator_drift(1, 0)
+                    env_parameters_gen["malfunction_mask_0"] = self.param_generator_drift(1, -1)
+                    env_parameters_gen["malfunction_mask_1"] = self.param_generator_drift(1, -1)
                     env_parameters_gen["target_velocity"] = self.param_generator(1.5)
                     env_parameters_gen["wind_0"] = self.param_generator(0)
 
