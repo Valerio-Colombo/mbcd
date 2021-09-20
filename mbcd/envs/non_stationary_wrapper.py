@@ -9,20 +9,29 @@ class NonStationaryEnv(Wrapper):
         super(NonStationaryEnv, self).__init__(env)
         self.tasks = deque(tasks.value["tasks"])
         self.sim_type = tasks.value["sim"]
-        self.change_freq = tasks.value["change_freq"]
+        # self.change_freq = tasks.value["change_freq"]
+        if isinstance(tasks.value["change_freq"], int):
+            self.change_freq = deque([tasks.value["change_freq"]]*len(tasks.value["tasks"]))
+        else:
+            self.change_freq = deque(tasks.value["change_freq"])
         self.counter = 0
         self.fix_reward_vel = (self.sim_type == SimType.HalfCheetah) or (self.sim_type == SimType.Hopper)
 
-        self.env_task = Env(self.sim_type, self.current_task, self.change_freq)  # Get parameters
+        self.env_task = Env(self.sim_type, self.current_task, self.current_change_freq)  # Get parameters
 
     @property
     def current_task(self):
         return self.tasks[0]
 
+    @property
+    def current_change_freq(self):
+        return self.change_freq[0]
+
     def step(self, action):
-        if self.counter % self.change_freq == 0 and self.counter > 0:
+        if self.counter % self.current_change_freq == 0 and self.counter > 0:
             self.tasks.popleft()
-            self.env_task = Env(self.sim_type, self.current_task, self.change_freq)
+            self.change_freq.popleft()
+            self.env_task = Env(self.sim_type, self.current_task, self.current_change_freq)
 
             print("CHANGED TO TASK {} AT STEP {}!".format(self.current_task, self.counter))
 

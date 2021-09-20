@@ -83,6 +83,12 @@ if __name__ == '__main__':
 
     if args.env == 'halfcheetah':
         tasks = ExpType.Base_Drift_Switch_Test
+        change_freq = tasks.value["change_freq"]
+        if isinstance(change_freq, list):
+            total_timesteps = sum(tasks.value["change_freq"])
+        else:
+            total_timesteps = change_freq * len(tasks.value["tasks"])
+
         config = {
                 'env': NonStationaryEnv(gym.envs.make('HalfCheetah-v2'), tasks=tasks),
                 'rollout_schedule': [20000, 50000, 1, 1],
@@ -97,7 +103,7 @@ if __name__ == '__main__':
                 'dynamics_memory_size': 100000,
                 'cusum_threshold': 100,
                 'run_id':'{}-halfcheetah-ns-paper{}'.format(args.algo, str(SEED)),
-                'total_timesteps': tasks.value["change_freq"] * len(tasks.value["tasks"])
+                'total_timesteps': total_timesteps
         }
 
 
