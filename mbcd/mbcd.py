@@ -183,7 +183,7 @@ class MBCD:
                         self.variance[self.current_model]).sum(-1))
         new_model_log_pdf = np.log(np.exp(new_model_log_pdf).sum(0) + 1e-8)
 
-        print("VALUES | var_mean:{}".format(self.var_mean[self.current_model]))
+        # print("VALUES | var_mean:{}".format(self.var_mean[self.current_model]))  # TODO erase comment
 
         if self.var_mean[self.current_model] < self.max_std and self.counter > self.min_steps:
             log_ratio = new_model_log_pdf - self.log_prob[self.current_model]
@@ -196,7 +196,7 @@ class MBCD:
 
         if maxm > self.threshold:
             changed = True
-            self.memory.remove_last_n(n=100) # Remove last experiences, as they may be from different context
+            self.memory.remove_last_n(n=100)  # Remove last experiences, as they may be from different context
 
             if maxm == self.S[-1]:  # New Model
                 newm = self.new_model()
@@ -364,6 +364,7 @@ class MBCD:
             self.models[i].load_weights()
             self.steps_per_context[i] = self.min_steps + 1  # So it will not ignore context detection
         self.load_dataset(self.current_model)
+        self.steps_per_context[self.current_model] = self.memory.size+1
         if load_policy:
             self.sac.load_parameters('weights/'+self.run_id+'pi'+str(self.current_model))
 
