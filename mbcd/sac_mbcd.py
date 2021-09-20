@@ -498,15 +498,16 @@ class SAC(OffPolicyRLModel):
                 assert action.shape == self.env.action_space.shape
 
                 new_obs, reward, done, info = self.env.step(unscaled_action)
-                frames.append(self.env.render(mode='rgb_array'))
 
-                if done and self.save_gifs:
-                    filename_gif = "Half_cheetah_" + str(self.ep_num) + ".gif"
-                    save_frames_as_gif(frames, filename=filename_gif)
-                    print("Gif saved successfully")
+                if self.save_gifs:
+                    frames.append(self.env.render(mode='rgb_array'))
+                    if done:
+                        filename_gif = "Half_cheetah_" + str(self.ep_num) + ".gif"
+                        save_frames_as_gif(frames, filename=filename_gif)
+                        print("Gif saved successfully")
 
-                    self.ep_num += 1
-                    frames = []
+                        self.ep_num += 1
+                        frames = []
 
                 self.num_timesteps += 1
 
@@ -547,7 +548,7 @@ class SAC(OffPolicyRLModel):
                     elif self.deepMBCD.counter < 40000:
                         self.model_train_freq = 250
                     elif self.deepMBCD.counter < 60000:
-                        self.model_train_freq = 500  # 5000
+                        self.model_train_freq = 5000  # 5000
                     else:
                         self.model_train_freq = 2000
 
@@ -563,8 +564,12 @@ class SAC(OffPolicyRLModel):
                         log_prob_chunks = self.deepMBCD.calculate_logprob_chunks(self.model_drift_chunk_size, self.model_drift_window_length)
 
                         suffix = str(self.deepMBCD.counter) + "_" + str(self.deepMBCD.current_model)
+                        print("Saving drift log...")
                         self.driftManager.save_drift_log(log_prob_chunks, filename_suffix=suffix)
                         print("Drift log saved")
+                        print("Starting regression...")
+
+                        self.driftManager.check_env_drift(log_prob_chunks)
 
                     # Store transition in the replay buffer.
                     if self.deepMBCD.counter < 5000:
