@@ -105,7 +105,7 @@ class DriftHandler:
             start_y_pre = np.matmul(poly.fit_transform(np.array([data_int_min])[None]), w_pre)
             end_y_pre = np.matmul(poly.fit_transform(np.array([i-(1E-6)])[None]), w_pre)
             start_y_post = np.matmul(poly.fit_transform(np.array([i])[None]), w_post)
-            end_y_post = np.matmul(poly.fit_transform(np.array([data_int_max])[None]), w_post)  # TODO !!!
+            end_y_post = np.matmul(poly.fit_transform(np.array([data_int_max-1])[None]), w_post)  # TODO !!!
 
             mean_start_y_pre = np.mean(start_y_pre)
             mean_end_y_pre = np.mean(end_y_pre)
@@ -163,6 +163,26 @@ class DriftHandler:
             return float('inf'), float('inf')
         return x / z, y / z
 
+    @staticmethod
+    def _predict_future_performance(num_data, num_models, mask):
+        # Initialization
+        poly = PolynomialFeatures(4)  # TODO regression order is hardcoded!
+
+        x = np.arange(num_data)
+        x_masked = np.expand_dims(x, axis=-1)[mask]
+        phi = poly.fit_transform(x_masked[:, np.newaxis])
+        proto_H = np.matmul(np.linalg.inv(np.matmul(phi.transpose(), phi)), phi.transpose())
+        w = np.zeros([proto_H.shape[0], num_models])
+
+        fut_pred_p = np.zeros([num_models])
+
+        for i in range(num_models):
+            w[:, i] = np.matmul(proto_H, y_flip[mask[:, 0], i])
+            yfit_p[:, i] = np.matmul(phi_fit, w[:, i])
+
+            fut_step = np.array([x[-1] + 1])[None]
+            fut_pred_p[i] = np.matmul(poly.fit_transform(fut_step), w[:, i])
+
     def check_env_drift(self, l_arr):  # l_arr = (num_data, num_models)
         # Initialization
         num_data = l_arr.shape[0]
@@ -174,46 +194,13 @@ class DriftHandler:
         for i in range(num_models):  # l_arr is flipped to have older data in lower indices and vice versa
             log_like[:, i] = np.flip(l_arr[:, i])
 
+        # Outliers detection
         mask, log_like_ensemble_mean = self._find_outliers(x, log_like)
 
+        # Change point search
         change_point = self._find_change_point(num_data, mask, log_like_ensemble_mean)
         if change_point != 0:
             print("DRIFT HAPPENED AT: {}".format(change_point))
+            # self._predict_future_performance(num_models)
 
         return change_point
-
-    @staticmethod
-    def predict_future_performance(l_arr):
-        num_model = l_arr.shape[-1]
-        num_chunks = l_arr.shape[0]
-        num_features = 6
-
-        x = np.arange(num_chunks)
-
-        y_flip = np.empty_like(l_arr)
-        for i in range(num_model):
-            y_flip[:, i] = np.flip(l_arr[:, i])
-
-        poly = PolynomialFeatures(num_features)
-        phi = poly.fit_transform(x[:, np.newaxis])
-        proto_H = np.matmul(np.linalg.inv(np.matmul(phi.transpose(), phi)), phi.transpose())
-
-        w = np.zeros([num_features+1, num_model])
-
-        fut_pred_p = np.zeros([y_flip.shape[-1]])
-
-        """
-        poly_model = make_pipeline(PolynomialFeatures(6),  # 6 is very good
-                                   LinearRegression())
-
-        # y_fit_p = np.zeros([1000, y_flip.shape[-1]])
-        fut_pred_p = np.zeros([y_flip.shape[-1]])
-
-        for i in range(y_flip.shape[-1]):
-            poly_model.fit(x[:, np.newaxis], y_flip[:, i])
-            # y_fit_p[:, i] = poly_model.predict(x_fit[:, np.newaxis])
-            fut_step = np.array([x[-1] + 1])[None]
-            fut_pred_p[i] = poly_model.predict(fut_step)
-        """
-
-        return fut_pred_p

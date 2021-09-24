@@ -167,9 +167,9 @@ class SAC(OffPolicyRLModel):
         self.model_train_freq = 250  # frequency at we update models parameters. Corresponds to F in the paper
 
         self.model_drift_chunk_size = 250
-        self.model_drift_freq = 1000
+        self.model_drift_freq = 500
         self.model_drift_threshold = 0
-        self.model_drift_window_length = 20000
+        self.model_drift_window_length = 10000
 
         self.ep_num = 0
 

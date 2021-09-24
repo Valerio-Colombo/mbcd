@@ -32,8 +32,8 @@ class Dataset:
         inds = np.random.choice(self.size, batch_size, replace=replace)
         return self.obs_buf[inds], self.acts_buf[inds], self.rews_buf[inds], self.next_obs_buf[inds], self.done_buf[inds]
 
-    def sample_chunks(self, chunk_size):  # TODO implement chunk sampling
-        chunk_num = int(self.size / chunk_size)
+    def sample_chunks(self, chunk_size, window_length):  # TODO implement chunk sampling
+        chunk_num = int(min(self.size, window_length) / chunk_size)
 
         chunk_arr_input = np.zeros((chunk_num,
                                     chunk_size,
