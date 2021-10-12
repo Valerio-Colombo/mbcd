@@ -18,6 +18,8 @@ from mbcd.models.fc import FC
 
 from mbcd.utils.logger import Progress, Silent
 
+import copy
+
 np.set_printoptions(precision=4)
 
 
@@ -89,6 +91,8 @@ class BNN:
             print("Created an ensemble of {} neural networks with variance predictions | Elites: {}".format(self.num_nets, self.num_elites))
 
         self._model_inds = [i for i in range(self.num_nets)]
+
+        self._old_parameters = None # LITTLE HACK USED TO RESCALE PARAMETERS UPDATE. THIS WILL BE REMOVED! TODO find a good way to scale gradients dynamically
 
     @property
     def is_probabilistic(self):
@@ -224,6 +228,8 @@ class BNN:
                     var.load(params_dict[str(i)])
         self.finalized = True
 
+        self._old_parameters = self.get_weights()
+
     ##################
     # Custom Methods #
     ##################
@@ -238,7 +244,7 @@ class BNN:
         for layer in range(num_layers):
             # net_state = self._state[i]
             params = {key: np.stack([weights[net][layer][key] for net in range(self.num_nets)]) for key in keys}
-            ops.extend(self.layers[layer].set_model_vars(params))
+            ops.extend(self.layers[layer].set_model_vars(params, self.sess))
         self.sess.run(ops)
 
     def _save_state(self, idx):
@@ -313,8 +319,35 @@ class BNN:
     #################
     # Model Methods #
     #################
+    def train_rescaled(self, inputs, targets,
+                       batch_size=32, max_epochs=None, max_epochs_since_update=5,
+                       hide_progress=False, holdout_ratio=0.0, max_logging=5000, max_grad_updates=None, timer=None,
+                       max_t=None, gradient_coeff=1):
+        print("Started gradient rescaling")
 
-    #@profile
+        self._old_parameters = self.get_weights()
+        self.train(inputs, targets,
+                   batch_size=batch_size, max_epochs=max_epochs, max_epochs_since_update=max_epochs_since_update,
+                   hide_progress=hide_progress, holdout_ratio=holdout_ratio, max_logging=max_logging,
+                   max_grad_updates=max_grad_updates, timer=timer, max_t=max_t)
+        unscaled_parameters = self.get_weights()  # Updated but not scaled nets parameters
+        very_old_parameters = copy.deepcopy(self._old_parameters)
+
+        for net_key in unscaled_parameters.keys():
+            for idx_layer, layer in enumerate(unscaled_parameters.get(net_key)):
+                delta_weights = layer.get("weights") - self._old_parameters.get(net_key)[idx_layer].get("weights")
+                delta_biases = layer.get("biases") - self._old_parameters.get(net_key)[idx_layer].get("biases")
+
+                delta_weights = delta_weights * gradient_coeff
+                delta_biases = delta_biases * gradient_coeff  # TODO put real coeff
+
+                self._old_parameters.get(net_key)[idx_layer]["weights"] += delta_weights
+                self._old_parameters.get(net_key)[idx_layer]["biases"] += delta_biases
+
+        self.set_weights(self._old_parameters)
+        print("Gradient rescaled")
+
+    # @profile
     def train(self, inputs, targets,
               batch_size=32, max_epochs=None, max_epochs_since_update=5,
               hide_progress=False, holdout_ratio=0.0, max_logging=5000, max_grad_updates=None, timer=None, max_t=None):
@@ -517,7 +550,7 @@ class BNN:
 
     def save(self, savedir, timestep):
         """Saves all information required to recreate this model in two files in savedir
-        (or self.model_dir if savedir is None), one containing the model structuure and the other
+        (or self.model_dir if savedir is None), one containing the model structure and the other
         containing all variables in the network.
 
         savedir (str): (Optional) Path to which files will be saved. If not provided, self.model_dir

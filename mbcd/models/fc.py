@@ -67,8 +67,8 @@ class FC:
     def set_model_vars(self, variables, sess):
         for attr, var in variables.items():
             getattr(self, attr).load(var, sess)
-        #ops = [getattr(self, attr).assign(var) for attr, var in variables.items()]
-        #return ops
+        ops = [getattr(self, attr).assign(var) for attr, var in variables.items()]
+        return ops
         # for attr, var in variables.items():
             # tensor = getattr(self, attr)
             # op = tensor.assign(var)

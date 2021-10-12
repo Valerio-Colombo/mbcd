@@ -4,8 +4,8 @@ from mbcd.envs.envs_enum import EnvType, SimType
 
 class ExpType(enum.Enum):
     Normal = {"sim": SimType.HalfCheetah,
-              "tasks": [EnvType.Normal, EnvType.Wind],
-              "change_freq": [2000, 40000]}
+              "tasks": [EnvType.Normal],
+              "change_freq": [40000]}
     Base_HC = {"sim": SimType.HalfCheetah,
                "tasks": [EnvType.Normal, EnvType.Joint_Malfunction, EnvType.Wind, EnvType.Velocity,
                          EnvType.Normal, EnvType.Joint_Malfunction, EnvType.Wind, EnvType.Velocity,
@@ -17,6 +17,9 @@ class ExpType(enum.Enum):
     Base_Drift_Switch_Test = {"sim": SimType.HalfCheetah,
                               "tasks": [EnvType.Normal, EnvType.Joint_Malfunction_Drift, EnvType.Joint_Malfunction],
                               "change_freq": [2000, 40000, 1000]}
+    Base_Short_Drift_Switch_Test = {"sim": SimType.HalfCheetah,
+                                    "tasks": [EnvType.Normal, EnvType.Joint_Malfunction_Drift, EnvType.Joint_Malfunction],
+                                    "change_freq": [2000, 10000, 1000]}
     Base_Wind_Test = {"sim": SimType.HalfCheetah,
                       "tasks": [EnvType.Wind],
                       "change_freq": 40000}

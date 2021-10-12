@@ -38,6 +38,7 @@ class NonStationaryEnv(Wrapper):
         pos_before = self.unwrapped.sim.data.qpos[0]
         env_parameters = self.env_task.get_params()
 
+        # print(env_parameters["malfunction_mask"])
         action = env_parameters["malfunction_mask"] * action
 
         for part in self.unwrapped.sim.model._body_name2id.values():

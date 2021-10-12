@@ -9,7 +9,7 @@ import os
 
 
 class DriftHandler:
-    def __init__(self):
+    def __init__(self, model_drift_chunk_size, model_drift_window_length):
         self.save_path_root_dir = '/home/valerio/PycharmProjects/mbcd/drift/logs'
         date_time = datetime.datetime.now()
         sub_dir = 'Drift_Log-' + \
@@ -25,6 +25,11 @@ class DriftHandler:
 
         self.save_counter = 0
 
+        self.model_drift_chunk_size = model_drift_chunk_size
+        self.model_drift_window_length = model_drift_window_length
+
+        self.grad_coeff = self.calculate_gradient_rescaling_coeff()
+
     def save_drift_log(self, log_prob_chunks, filename_suffix=""):
         if filename_suffix == "":
             filename = 'drift_log_' + str(self.save_counter)
@@ -36,6 +41,19 @@ class DriftHandler:
 
         self.save_counter += 1
 
+    def calculate_gradient_rescaling_coeff(self):
+        num_data = self.model_drift_window_length/self.model_drift_chunk_size
+        x = np.arange(num_data)
+
+        poly = PolynomialFeatures(4)  # TODO hardcoded polynomial grade
+        phi = poly.fit_transform(x[:, np.newaxis])
+        proto_H = np.matmul(np.linalg.inv(np.matmul(phi.transpose(), phi)), phi.transpose())
+
+        fut_step = np.array([num_data])[None]
+        coeff = np.matmul(poly.fit_transform(fut_step), proto_H)
+
+        return coeff
+
     @staticmethod
     def _find_outliers(x, log_like):
         # Outliers finder
@@ -44,8 +62,8 @@ class DriftHandler:
         poly_model = make_pipeline(PolynomialFeatures(4), Ridge())  # TODO hardcoded ridge regression order
         poly_model.fit(x[:, np.newaxis], log_like_ensemble_mean[:, np.newaxis])
 
-        log_like_reg = poly_model.predict(x[:, np.newaxis])  # log_like_reg = (80,1)
-        log_like_ensemble_mean = np.expand_dims(log_like_ensemble_mean, axis=-1)  # log_like_ensemble_mean = (80,1)
+        log_like_reg = poly_model.predict(x[:, np.newaxis])  # log_like_reg = (num_data,1)
+        log_like_ensemble_mean = np.expand_dims(log_like_ensemble_mean, axis=-1)  # log_like_ensemble_mean = (num_data,1)
         log_like_ensemble_mean_normalized = log_like_ensemble_mean - log_like_reg  # log_like_ensemble_mean_normalized = (80,1)
 
         std_dev = np.std(log_like_ensemble_mean_normalized)
@@ -131,11 +149,8 @@ class DriftHandler:
                 final_end_y_post = mean_end_y_post
 
         print("Angle diff: {} rad, {} deg".format(coeff_max_diff, np.rad2deg(coeff_max_diff)))
-        print("Change point X: {}".format(change_point))
 
-        elaborated_x = 0
-
-        if coeff_max_diff >= 0.7:  # TODO set threshold
+        if coeff_max_diff >= 0.61:  # TODO set threshold
             elaborated_x = np.rint(self._get_intersect(
                 [data_int_min, final_start_y_pre], [change_point, final_end_y_pre],
                 [change_point, final_start_y_post], [data_int_max, final_end_y_post])[0])
@@ -164,7 +179,7 @@ class DriftHandler:
         return x / z, y / z
 
     @staticmethod
-    def _predict_future_performance(num_data, num_models, mask):
+    def _predict_future_performance(num_data, num_models, mask, log_like):
         # Initialization
         poly = PolynomialFeatures(4)  # TODO regression order is hardcoded!
 
@@ -177,11 +192,12 @@ class DriftHandler:
         fut_pred_p = np.zeros([num_models])
 
         for i in range(num_models):
-            w[:, i] = np.matmul(proto_H, y_flip[mask[:, 0], i])
-            yfit_p[:, i] = np.matmul(phi_fit, w[:, i])
+            w[:, i] = np.matmul(proto_H, log_like[mask[:, 0], i])
 
             fut_step = np.array([x[-1] + 1])[None]
             fut_pred_p[i] = np.matmul(poly.fit_transform(fut_step), w[:, i])
+
+        return fut_pred_p
 
     def check_env_drift(self, l_arr):  # l_arr = (num_data, num_models)
         # Initialization
@@ -199,8 +215,6 @@ class DriftHandler:
 
         # Change point search
         change_point = self._find_change_point(num_data, mask, log_like_ensemble_mean)
-        if change_point != 0:
-            print("DRIFT HAPPENED AT: {}".format(change_point))
-            # self._predict_future_performance(num_models)
+        print("Change point X: {}".format(change_point))
 
-        return change_point
+        return change_point, mask

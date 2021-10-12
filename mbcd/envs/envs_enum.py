@@ -70,7 +70,7 @@ class Env:
             elif env_type == EnvType.Wind:
                 param_dict["malfunction_mask"] = np.ones(sim_type.value["action_dim"])
                 param_dict["target_velocity"] = 1.5
-                param_dict["wind"] = [-6, 0, 0, 0, 0, 0]
+                param_dict["wind"] = [-4, 0, 0, 0, 0, 0]
 
                 env_parameters_gen["malfunction_mask_0"] = self.param_generator(1)
                 env_parameters_gen["malfunction_mask_1"] = self.param_generator(1)
@@ -83,8 +83,8 @@ class Env:
                 param_dict["wind"] = [0, 0, 0, 0, 0, 0]
 
                 if env_type == EnvType.Joint_Malfunction_Drift:
-                    env_parameters_gen["malfunction_mask_0"] = self.param_generator_drift(1, -1)
-                    env_parameters_gen["malfunction_mask_1"] = self.param_generator_drift(1, -1)
+                    env_parameters_gen["malfunction_mask_0"] = self.param_generator_drift(1, 0.5)  # TODO put -1
+                    env_parameters_gen["malfunction_mask_1"] = self.param_generator_drift(1, 0.5)
                     env_parameters_gen["target_velocity"] = self.param_generator(1.5)
                     env_parameters_gen["wind_0"] = self.param_generator(0)
 
@@ -98,7 +98,7 @@ class Env:
                     env_parameters_gen["malfunction_mask_0"] = self.param_generator(1)
                     env_parameters_gen["malfunction_mask_1"] = self.param_generator(1)
                     env_parameters_gen["target_velocity"] = self.param_generator(1.5)
-                    env_parameters_gen["wind_0"] = self.param_generator_drift(0, -6)
+                    env_parameters_gen["wind_0"] = self.param_generator_drift(0, -4)
 
         return param_dict, env_parameters_gen
 

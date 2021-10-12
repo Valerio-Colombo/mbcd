@@ -32,7 +32,7 @@ class Dataset:
         inds = np.random.choice(self.size, batch_size, replace=replace)
         return self.obs_buf[inds], self.acts_buf[inds], self.rews_buf[inds], self.next_obs_buf[inds], self.done_buf[inds]
 
-    def sample_chunks(self, chunk_size, window_length):  # TODO implement chunk sampling
+    def sample_chunks(self, chunk_size, window_length):  # lower index are newer data
         chunk_num = int(min(self.size, window_length) / chunk_size)
 
         chunk_arr_input = np.zeros((chunk_num,
@@ -73,6 +73,28 @@ class Dataset:
             Y = normalize(Y, self.output_mean, self.output_std) """
 
         return X, Y
+
+    def to_train_batch_separated(self, window_length, chunk_size):
+        chunk_num = int(min(self.size, window_length) / chunk_size)
+
+        X = []
+        Y = []
+
+        for c in range(chunk_num):
+            chunk_start = self.ptr - 1 - chunk_size * c
+            indices = range(chunk_start, chunk_start - chunk_size, -1)
+
+            l_obs = np.take(self.obs_buf, indices, mode='wrap', axis=0)  # [chunk_size, obs_dim]
+            l_act = np.take(self.acts_buf, indices, mode='wrap', axis=0)  # [chunk_size, act_dim]
+            X_c = np.hstack((l_obs, l_act))
+            X.append(X_c)
+
+            l_rew = np.take(self.rews_buf, indices, mode='wrap', axis=0)  # [chunk_size, 1]
+            l_next_obs = np.take(self.next_obs_buf, indices, mode='wrap', axis=0)
+            Y_c = np.hstack((l_rew, l_next_obs - l_obs))
+            Y.append(Y_c)
+
+        return chunk_num, X, Y
 
     def __len__(self):
         return self.size

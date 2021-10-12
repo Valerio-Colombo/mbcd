@@ -166,10 +166,11 @@ class SAC(OffPolicyRLModel):
         self.rollout_schedule = rollout_schedule
         self.model_train_freq = 250  # frequency at we update models parameters. Corresponds to F in the paper
 
-        self.model_drift_chunk_size = 250
-        self.model_drift_freq = 500
+        self.model_drift_chunk_size = 256  # same as batch size to optimize calculus
+        self.model_drift_freq = 256
         self.model_drift_threshold = 0
-        self.model_drift_window_length = 10000
+        self.model_drift_window_length = 10240
+        self.drifting = False
 
         self.ep_num = 0
 
@@ -189,7 +190,7 @@ class SAC(OffPolicyRLModel):
                                     num_stds=num_stds,
                                     run_id=run_id)
 
-        self.driftManager = DriftHandler()
+        self.driftManager = DriftHandler(self.model_drift_chunk_size, self.model_drift_window_length)
 
         self.load_pre_trained_model = load_pre_trained_model
         if self.load_pre_trained_model:
@@ -548,17 +549,9 @@ class SAC(OffPolicyRLModel):
                     elif self.deepMBCD.counter < 40000:
                         self.model_train_freq = 250
                     elif self.deepMBCD.counter < 60000:
-                        self.model_train_freq = 5000  # 5000
+                        self.model_train_freq = 1000  # 5000
                     else:
                         self.model_train_freq = 2000
-
-                    if (changed and self.deepMBCD.counter > 10) or (self.deepMBCD.counter % self.model_train_freq == 0):
-                        if not self.deepMBCD.test_mode:
-                            self.deepMBCD.train()
-
-                        if self.deepMBCD.counter >= 5000:
-                            self.set_rollout_length()
-                            self.rollout_model()
 
                     if (self.deepMBCD.counter % self.model_drift_freq == 0) and (self.deepMBCD.counter >= self.model_drift_threshold):
                         log_prob_chunks = self.deepMBCD.calculate_logprob_chunks(self.model_drift_chunk_size, self.model_drift_window_length)
@@ -567,9 +560,32 @@ class SAC(OffPolicyRLModel):
                         print("Saving drift log...")
                         self.driftManager.save_drift_log(log_prob_chunks, filename_suffix=suffix)
                         print("Drift log saved")
-                        print("Starting regression...")
 
-                        self.driftManager.check_env_drift(log_prob_chunks)
+                        print("Starting regression...")
+                        change_point, mask = self.driftManager.check_env_drift(log_prob_chunks)
+                        print("Regression ended")
+
+                        if change_point != 0:
+                            self.drifting = True
+                            batch_size = 512
+                            change_point = np.rint(change_point/(batch_size/self.model_drift_chunk_size))
+
+                            self.deepMBCD.train(is_drifting=self.drifting,
+                                                mask=mask,
+                                                gradient_coeff=self.driftManager.grad_coeff,
+                                                batch_size=batch_size,
+                                                batch_window=self.model_drift_window_length,
+                                                change_point=change_point)
+                        else:
+                            self.drifting = False
+
+                    if ((changed and self.deepMBCD.counter > 10) or (self.deepMBCD.counter % self.model_train_freq == 0)) and (not self.drifting):
+                        if not self.deepMBCD.test_mode:
+                            self.deepMBCD.train()
+
+                        if self.deepMBCD.counter >= 5000:
+                            self.set_rollout_length()
+                            self.rollout_model()
 
                     # Store transition in the replay buffer.
                     if self.deepMBCD.counter < 5000:
