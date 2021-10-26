@@ -1,8 +1,9 @@
 import numpy as np
 
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import Ridge, LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
+from sklearn.metrics import mean_absolute_error
 
 import datetime
 import os
@@ -160,6 +161,108 @@ class DriftHandler:
 
         return elaborated_x
 
+    def _find_change_point_mse(self, num_data, mask, log_like_ensemble_mean):
+        change_point_step = 1  # TODO maybe make these class attributes?
+        change_point_int_min, change_point_int_max = 0.0, 1.0
+        change_point_buf_pre, change_point_buf_post = int(num_data/4), int(num_data/8)
+
+        data_int_min = int(change_point_int_min * num_data)
+        data_int_max = int(change_point_int_max * num_data)
+
+        poly_pre = make_pipeline(PolynomialFeatures(1), LinearRegression())
+        poly_post = make_pipeline(PolynomialFeatures(1), LinearRegression())
+
+        coeff_max_diff = np.Inf
+        change_point = 0
+        final_start_y_pre = 0
+        final_end_y_pre = 0
+        final_start_y_post = 0
+        final_end_y_post = 0
+
+        x = np.arange(num_data)
+
+        for i in range(data_int_min + change_point_buf_pre, data_int_max - change_point_buf_post, change_point_step):
+            x_capped_pre = x[data_int_min:i, np.newaxis][mask[data_int_min:i, 0]]
+            x_capped_post = x[i:data_int_max, np.newaxis][mask[i:data_int_max, 0]]
+
+            y_mean_capped_pre = log_like_ensemble_mean[data_int_min:i][mask[data_int_min:i, 0]]
+            y_mean_capped_post = log_like_ensemble_mean[i:data_int_max][mask[i:data_int_max, 0]]
+
+            poly_pre.fit(x_capped_pre, y_mean_capped_pre)
+            poly_post.fit(x_capped_post, y_mean_capped_post)
+
+            start_y_pre = poly_pre.predict(np.expand_dims([data_int_min], axis=-1))
+            end_y_pre = poly_pre.predict(np.expand_dims([i - (1E-6)], axis=-1))
+            start_y_post = poly_post.predict(np.expand_dims([i], axis=-1))
+            end_y_post = poly_post.predict(np.expand_dims([data_int_max - 1], axis=-1))
+
+            coeff_pre = (end_y_pre - start_y_pre) / (i - data_int_min)
+            coeff_post = (end_y_post - start_y_post) / (data_int_max - i)
+
+            y_pred_pre = poly_pre.predict(x_capped_pre)
+            mse_pre = mean_absolute_error(y_pred_pre, y_mean_capped_pre)
+            y_pred_post = poly_post.predict(x_capped_post)
+            mse_post = mean_absolute_error(y_pred_post, y_mean_capped_post)
+            # mse_tot = mse_pre + mse_post
+            mse_tot = (mse_pre * y_pred_pre.shape[0] + mse_post * y_pred_post.shape[0]) / (y_pred_pre.shape[0] + y_pred_post.shape[0])
+
+            angle = abs(np.arctan((coeff_pre - coeff_post) / (1 + coeff_pre * coeff_post)))
+
+            if mse_tot < coeff_max_diff:
+                coeff_max_diff = mse_tot
+                angle_c = angle
+
+                coeff_pre_change = coeff_pre
+                coeff_post_change = coeff_post
+
+                change_point = i
+                final_start_y_pre = start_y_pre
+                final_end_y_pre = end_y_pre
+                final_start_y_post = start_y_post
+                final_end_y_post = end_y_post
+
+                final_x_capped_pre = x_capped_pre
+                final_poly_pre = poly_pre
+                final_y_mean_capped_pre = y_mean_capped_pre
+                final_start_y_post = start_y_post
+                final_end_y_pre = end_y_pre
+
+                final_mean = poly_pre.predict(final_x_capped_pre)
+
+        print("Angle diff: {} rad, {} deg".format(angle_c, np.rad2deg(angle_c)))
+
+        if angle_c >= 0.61:  # TODO set threshold
+            elaborated_x = np.rint(self._get_intersect([data_int_min,
+                                                        final_start_y_pre[0, 0]],
+                                                       [change_point, final_end_y_pre[0, 0]],
+                                                       [change_point, final_start_y_post[0, 0]],
+                                                       [data_int_max, final_end_y_post[0, 0]])[0])
+            print("Intercept X: {}".format(elaborated_x))
+
+            drift = True
+        else:
+            elaborated_x = change_point
+            drift = False
+
+        abrupt = self._recognize_abrupt(final_y_mean_capped_pre,
+                                        final_mean,
+                                        final_start_y_post,
+                                        final_end_y_pre)
+
+        if abrupt:
+            drift = False
+
+        return drift, elaborated_x
+
+    def _recognize_abrupt(self, final_y_mean_capped_pre, final_mean, final_start_y_post, final_end_y_pre):
+        final_y_norm = final_y_mean_capped_pre - final_mean
+
+        sigma = np.std(final_y_norm)
+        z_score = (final_start_y_post - final_end_y_pre) / sigma
+
+        return z_score > 4
+
+
     @staticmethod
     def _get_intersect(a1, a2, b1, b2):
         """
@@ -178,6 +281,7 @@ class DriftHandler:
             return float('inf'), float('inf')
         return x / z, y / z
 
+    """
     @staticmethod
     def _predict_future_performance(num_data, num_models, mask, log_like):
         # Initialization
@@ -198,6 +302,7 @@ class DriftHandler:
             fut_pred_p[i] = np.matmul(poly.fit_transform(fut_step), w[:, i])
 
         return fut_pred_p
+    """
 
     def check_env_drift(self, l_arr):  # l_arr = (num_data, num_models)
         # Initialization
@@ -214,7 +319,7 @@ class DriftHandler:
         mask, log_like_ensemble_mean = self._find_outliers(x, log_like)
 
         # Change point search
-        change_point = self._find_change_point(num_data, mask, log_like_ensemble_mean)
+        drift, change_point = self._find_change_point_mse(num_data, mask, log_like_ensemble_mean)
         print("Change point X: {}".format(change_point))
 
-        return change_point, mask
+        return drift, change_point, mask

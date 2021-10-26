@@ -34,8 +34,10 @@ parser.add_argument('-algo', dest='algo', required=True, type=str, help="Algo [m
 parser.add_argument('-env', dest='env', required=False, type=str, help="Env [halfcheetah, pusher]", default='halfcheetah')
 parser.add_argument('-load', dest='load', required=False, type=bool, help="Load pre-trained [True, False]", default=False)
 parser.add_argument('-gif', dest='gif', required=False, type=bool, help="Save gifs [True, False]", default=False)
+parser.add_argument('-roll', dest='roll', required=False, type=str, help="Rollout type [mbcd, m2ac]\n", default='mbcd')
 args = parser.parse_args()
 assert args.algo in ['mbcd', 'mbpo', 'sac']
+assert args.roll in ['mbcd', 'm2ac']
 mbcd = args.algo == 'mbcd'
 mbpo = args.algo != 'sac'
 
@@ -69,9 +71,11 @@ def main(config):
                 tensorboard_log='./logs/',
                 seed=SEED,
                 load_pre_trained_model=args.load,
-                save_gifs=args.gif)
+                save_gifs=args.gif,
+                rollout_mode=args.roll)
 
-    model.learn(total_timesteps=config['total_timesteps'], tb_log_name='mbcd-test')
+    tb_log_name = 'mbcd-test-' + args.roll
+    model.learn(total_timesteps=config['total_timesteps'], tb_log_name=tb_log_name)
     if args.algo == 'sac':
         model.save('weights/'+'sacfinalpolicy')
     else:
@@ -82,16 +86,20 @@ def main(config):
 if __name__ == '__main__':
 
     if args.env == 'halfcheetah':
-        tasks = ExpType.Base_Short_Drift_Switch_Test
+        tasks = ExpType.Normal
         change_freq = tasks.value["change_freq"]
         if isinstance(change_freq, list):
             total_timesteps = sum(tasks.value["change_freq"])
         else:
             total_timesteps = change_freq * len(tasks.value["tasks"])
 
+        if args.roll == 'm2ac':
+            rollout_schedule = [5000, 10000, 1, 4]
+        else:
+            rollout_schedule = [5000, 10000, 1, 1]
         config = {
                 'env': NonStationaryEnv(gym.envs.make('HalfCheetah-v2'), tasks=tasks),
-                'rollout_schedule': [20000, 50000, 1, 1],
+                'rollout_schedule': rollout_schedule,
                 'batch_size': 256,
                 'gradient_steps': 20,
                 'target_entropy': 'auto',

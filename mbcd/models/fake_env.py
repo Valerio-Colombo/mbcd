@@ -126,6 +126,69 @@ class FakeEnv:
         info = {'mean': return_means, 'std': return_stds, 'log_prob': log_prob, 'dev': dev}
         return next_obs, rewards, terminals, info
 
+    def step_m2ac(self, obs, act, deterministic=False):
+        assert len(obs.shape) == len(act.shape)
+        if len(obs.shape) == 1:
+            obs = obs[None]
+            act = act[None]
+            return_single = True
+        else:
+            return_single = False
+
+        inputs = np.concatenate((obs, act), axis=-1)
+        ensemble_model_means, ensemble_model_vars = self.model.predict(inputs, factored=True)
+        ensemble_model_means[:,:,1:] += obs
+        ensemble_model_stds = np.sqrt(ensemble_model_vars)
+
+        if deterministic:
+            ensemble_samples = ensemble_model_means  # [num_models, batch_size, output_dim]
+        else:
+            ensemble_samples = ensemble_model_means + np.random.normal(size=ensemble_model_means.shape) * ensemble_model_stds
+
+        # choose one model from ensemble TODO: Check this part for ensemble management
+        num_models, batch_size, output_dim = ensemble_model_means.shape
+
+        model_inds = np.random.choice(np.arange(num_models), size=batch_size)
+        batch_inds = np.arange(0, batch_size)
+        samples_selected = ensemble_samples[model_inds, batch_inds]
+        samples_rest = np.empty([num_models-1, batch_size, output_dim])
+        for i in range(batch_size):
+            samples_rest[:, i, :] = np.delete(ensemble_samples[:, i, :], model_inds[i], axis=0)
+
+        model_means = ensemble_model_means[model_inds, batch_inds]
+        model_vars = ensemble_model_vars[model_inds, batch_inds]
+        model_stds = ensemble_model_stds[model_inds, batch_inds]
+
+        model_means_rest = np.empty([num_models-1, batch_size, output_dim])
+        model_vars_rest = np.empty([num_models-1, batch_size, output_dim])
+
+        for i in range(batch_size):
+            model_means_rest[:, i, :] = np.delete(ensemble_model_means[:, i, :], model_inds[i], axis=0)
+            model_vars_rest[:, i, :] = np.delete(ensemble_model_vars[:, i, :], model_inds[i], axis=0)
+        ####
+        model_means_rest_avg = np.mean(model_means_rest, axis=0)
+        model_vars_rest_avg = np.mean(model_vars_rest, axis=0)
+
+        log_prob, dev = self._get_logprob(samples_selected, ensemble_model_means, ensemble_model_vars)
+
+        rewards_selected, next_obs_selected = samples_selected[:, :1], samples_selected[:, 1:]
+
+        terminals = self.termination_func(obs, act, next_obs_selected)
+
+        batch_size = model_means.shape[0]
+        return_means = np.concatenate((model_means[:, :1], terminals, model_means[:, 1:]), axis=-1)
+        return_stds = np.concatenate((model_stds[:, :1], np.zeros((batch_size, 1)), model_stds[:, 1:]), axis=-1)
+
+        if return_single:
+            next_obs_selected = next_obs_selected[0]
+            return_means = return_means[0]
+            return_stds = return_stds[0]
+            rewards_selected = rewards_selected[0]
+            terminals = terminals[0]
+
+        info = {'mean': return_means, 'std': return_stds, 'log_prob': log_prob, 'dev': dev}
+        return next_obs_selected, rewards_selected, model_means, model_vars, model_means_rest_avg, model_vars_rest_avg, terminals, info
+
     ## for debugging computation graph
     def step_ph(self, obs_ph, act_ph, deterministic=False):
         assert len(obs_ph.shape) == len(act_ph.shape)

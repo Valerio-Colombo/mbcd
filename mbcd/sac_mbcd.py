@@ -18,7 +18,7 @@ from drift.drift_manager import DriftHandler
 from mbcd.mbcd import MBCD
 from mbcd.models.fake_env import FakeEnv
 from mbcd.utils.logger import Logger
-from mbcd.utils.util import save_frames_as_gif
+from mbcd.utils.util import save_frames_as_gif, kl_mvn, kl_mvn_diagonal
 
 
 class SAC(OffPolicyRLModel):
@@ -66,28 +66,28 @@ class SAC(OffPolicyRLModel):
         If None, the number of cpu of the current machine will be used.
     """
 
-    def __init__(self, 
-                policy, 
-                env, 
-                gamma=0.99, 
-                learning_rate=3e-4, 
+    def __init__(self,
+                policy,
+                env,
+                gamma=0.99,
+                learning_rate=3e-4,
                 buffer_size=1000000,
-                learning_starts=256, 
-                train_freq=1, 
+                learning_starts=256,
+                train_freq=1,
                 batch_size=256,
-                tau=0.005, 
-                ent_coef='auto', 
+                tau=0.005,
+                ent_coef='auto',
                 target_update_interval=1,
-                gradient_steps=20, 
-                target_entropy='auto', 
+                gradient_steps=20,
+                target_entropy='auto',
                 action_noise=None,
-                random_exploration=0.0, 
-                verbose=0, 
+                random_exploration=0.0,
+                verbose=0,
                 tensorboard_log=None,
-                _init_setup_model=True, 
-                policy_kwargs=None, 
+                _init_setup_model=True,
+                policy_kwargs=None,
                 full_tensorboard_log=False,
-                seed=None, 
+                seed=None,
                 n_cpu_tf_sess=None,
                 mbpo=True,
                 rollout_schedule=[20e3, 100e3, 1, 5],
@@ -100,7 +100,8 @@ class SAC(OffPolicyRLModel):
                 cusum_threshold=100,
                 run_id='test',
                 load_pre_trained_model=False,
-                save_gifs=False):
+                save_gifs=False,
+                rollout_mode='mbcd'):
 
         super(SAC, self).__init__(policy=policy, env=env, replay_buffer=None, verbose=verbose,
                                   policy_base=SACPolicy, requires_vec_env=False, policy_kwargs=policy_kwargs,
@@ -168,7 +169,7 @@ class SAC(OffPolicyRLModel):
 
         self.model_drift_chunk_size = 256  # same as batch size to optimize calculus
         self.model_drift_freq = 256
-        self.model_drift_threshold = 0
+        self.model_drift_threshold = 5000
         self.model_drift_window_length = 10240
         self.drifting = False
 
@@ -176,12 +177,12 @@ class SAC(OffPolicyRLModel):
 
         if _init_setup_model:
             self.setup_model()
-        
+
         self.deepMBCD = None
         if self.mbpo or self.mbcd:
             self.deepMBCD = MBCD(state_dim=self.observation_space.shape[0],
-                                    action_dim=self.action_space.shape[0], 
-                                    sac=self, 
+                                    action_dim=self.action_space.shape[0],
+                                    sac=self,
                                     n_hidden_units=n_hidden_units_dynamics,
                                     num_layers=n_layers_dynamics,
                                     memory_capacity=dynamics_memory_size,
@@ -197,6 +198,7 @@ class SAC(OffPolicyRLModel):
             self.deepMBCD.load(num_models=1, load_policy=True)  # load only normal model for now TODO make multi model loading
 
         self.save_gifs = save_gifs
+        self.rollout_mode = rollout_mode
 
     @property
     def model_buffer_size(self):
@@ -541,7 +543,7 @@ class SAC(OffPolicyRLModel):
                         print("DETECTED CONTEXT CHANGED TO {} AT STEP {}".format(self.deepMBCD.current_model, step))
 
                     self.deepMBCD.add_experience(obs.copy(), unscaled_action.copy(), reward, new_obs.copy(), False)
-                    
+
                     if self.deepMBCD.counter < 250:
                         self.model_train_freq = 10
                     elif self.deepMBCD.counter < 5000:
@@ -562,22 +564,22 @@ class SAC(OffPolicyRLModel):
                         print("Drift log saved")
 
                         print("Starting regression...")
-                        change_point, mask = self.driftManager.check_env_drift(log_prob_chunks)
+                        drift, change_point, mask = self.driftManager.check_env_drift(log_prob_chunks)
                         print("Regression ended")
 
-                        if change_point != 0:
-                            self.drifting = True
-                            batch_size = 512
-                            change_point = np.rint(change_point/(batch_size/self.model_drift_chunk_size))
-
-                            self.deepMBCD.train(is_drifting=self.drifting,
-                                                mask=mask,
-                                                gradient_coeff=self.driftManager.grad_coeff,
-                                                batch_size=batch_size,
-                                                batch_window=self.model_drift_window_length,
-                                                change_point=change_point)
-                        else:
-                            self.drifting = False
+                        # if drift:
+                        #     self.drifting = True
+                        #     batch_size = 512
+                        #     change_point = np.rint(change_point/(batch_size/self.model_drift_chunk_size))
+                        #
+                        #     self.deepMBCD.train(is_drifting=self.drifting,
+                        #                         mask=mask,
+                        #                         gradient_coeff=self.driftManager.grad_coeff,
+                        #                         batch_size=batch_size,
+                        #                         batch_window=self.model_drift_window_length,
+                        #                         change_point=change_point)
+                        # else:
+                        #     self.drifting = False
 
                     if ((changed and self.deepMBCD.counter > 10) or (self.deepMBCD.counter % self.model_train_freq == 0)) and (not self.drifting):
                         if not self.deepMBCD.test_mode:
@@ -585,7 +587,11 @@ class SAC(OffPolicyRLModel):
 
                         if self.deepMBCD.counter >= 5000:
                             self.set_rollout_length()
-                            self.rollout_model()
+                            if self.rollout_mode == 'm2ac':
+                                self.rollout_model_m2ac()
+                            else:
+                                self.rollout_model()
+                        print("Rollout length: {}".format(self.rollout_length))
 
                     # Store transition in the replay buffer.
                     if self.deepMBCD.counter < 5000:
@@ -593,7 +599,7 @@ class SAC(OffPolicyRLModel):
                 ##################################################################################################
                 else:
                     self.replay_buffer.add(obs_.copy(), unscaled_action.copy(), np.array([reward_]), new_obs_.copy(), np.array([float(False)]))
-                    
+
                     self.logger.log({'done': done, 'reward': reward})
                     if (step+1) % 100 == 0:
                         self.logger.save('results/' + self.run_id)
@@ -686,9 +692,9 @@ class SAC(OffPolicyRLModel):
                     # Reset infos:
                     infos_values = []
             callback.on_training_end()
-            
+
             #save_frames_as_gif(frames)
-            
+
             return self
 
     def set_rollout_length(self):  # s = "step" rl = "rollout"
@@ -703,12 +709,15 @@ class SAC(OffPolicyRLModel):
         # Augment replay buffer size
         if y != self.rollout_length:
             self.rollout_length = y
-            self._next_idx = len(self.replay_buffer)
+            self.replay_buffer._next_idx = len(self.replay_buffer)
             self.replay_buffer._maxsize = self.model_buffer_size
+
+            print("New replay buffer length: {}".format(self.model_buffer_size))
 
     def rollout_model(self):  # Simulated rollouts
         # Planning
-        for _ in range(10):  # 10 samples of 10000 instead of 1 of 100000 to not allocate all gpu memory
+        for j in range(10):  # 10 samples of 10000 instead of 1 of 100000 to not allocate all gpu memory
+            print("iteration MBCD: {}".format(j))
             obs, _, _, _, _ = self.deepMBCD.memory.sample(10000)
             fake_env = FakeEnv(self.deepMBCD.models[self.deepMBCD.current_model], self.env.spec.id)
             for plan_step in range(self.rollout_length):
@@ -725,6 +734,72 @@ class SAC(OffPolicyRLModel):
                     break
 
                 obs = next_obs_pred[nonterm_mask]
+
+    def rollout_model_m2ac(self, samples_perc=0.25, alpha=0.001):
+        """
+        1) Randomly sample B state(s) from from memory with replacement
+        2) For every step of the rollouts and for every state
+            2.1) Get a from policy starting from s
+            2.2) Choose randomly a net in the BNN ensemble
+            2.3) Get next state and reward predictions
+            2.4) Calculate Kullback-Leibler index u of isolated net and rest of the ensemble
+        3) Rank samples by u
+        4) Get first w best samples and add them to the buffer
+        """
+        B = 100000
+        num_sub_iter = 10
+
+        for x in range(num_sub_iter):
+            # 1)
+            print("iteration: {}".format(x))
+            B_sub_iter = int(B/num_sub_iter)
+            obs, _, _, _, _ = self.deepMBCD.memory.sample(B_sub_iter)
+            fake_env = FakeEnv(self.deepMBCD.models[self.deepMBCD.current_model], self.env.spec.id)
+
+            for _ in range(self.rollout_length):
+                # 2.1)
+                actions = self.policy_tf.step(obs, deterministic=False)
+                actions = unscale_action(self.action_space, actions)
+                # 2.2, 2.3)
+                next_obs_selected,      \
+                rewards_selected,       \
+                model_means,            \
+                model_vars,             \
+                model_means_rest_avg,   \
+                model_vars_rest_avg,    \
+                dones,                  \
+                info = fake_env.step_m2ac(obs, actions)
+
+                dones_float = dones.astype(float)
+
+                # 2.4)
+                u_scores = np.empty([len(obs)])
+                for i in range(len(obs)):
+                    u_scores[i] = kl_mvn_diagonal(model_means[i, :],
+                                                  model_vars[i, :],
+                                                  model_means_rest_avg[i, :],
+                                                  model_vars_rest_avg[i, :])
+                # 3)
+                u_scores_sorted_indices = np.argsort(u_scores)
+
+                # 4)
+                for i in range(int(len(obs) * samples_perc)):
+                    # Penalize samples with high uncertainty
+                    reward_rescaled = rewards_selected[u_scores_sorted_indices[i]].copy()
+                    coeff = u_scores[u_scores_sorted_indices[i]]
+                    reward_rescaled -= alpha * coeff
+
+                    self.replay_buffer.add(obs[u_scores_sorted_indices[i]].copy(),
+                                           actions[u_scores_sorted_indices[i]].copy(),
+                                           reward_rescaled,
+                                           next_obs_selected[u_scores_sorted_indices[i]].copy(),
+                                           dones_float[u_scores_sorted_indices[i]].copy())
+                nonterm_mask = ~dones.squeeze(-1)
+                if nonterm_mask.sum() == 0:
+                    break
+
+                obs = next_obs_selected[nonterm_mask]
+
 
     def action_probability(self, observation, state=None, mask=None, actions=None, logp=False):
         if actions is not None:

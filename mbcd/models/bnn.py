@@ -64,6 +64,7 @@ class BNN:
         self.scaler = None
 
         # Training objects
+        self.learning_rate = None
         self.optimizer = None
         self.sy_train_in, self.sy_train_targ = None, None
         self.train_op, self.mse_loss = None, None
@@ -160,6 +161,8 @@ class BNN:
             raise RuntimeError("Can only finalize a network once.")
 
         optimizer_args = {} if optimizer_args is None else optimizer_args
+
+        self.learning_rate = optimizer_args.get("learning_rate")
         self.optimizer = optimizer(**optimizer_args)
 
         # Add variance output.
@@ -350,7 +353,8 @@ class BNN:
     # @profile
     def train(self, inputs, targets,
               batch_size=32, max_epochs=None, max_epochs_since_update=5,
-              hide_progress=False, holdout_ratio=0.0, max_logging=5000, max_grad_updates=None, timer=None, max_t=None):
+              hide_progress=False, holdout_ratio=0.0, max_logging=5000, max_grad_updates=None, timer=None, max_t=None,
+              learning_rate=0.001):
         """Trains/Continues network training
 
         Arguments:
@@ -363,6 +367,8 @@ class BNN:
 
         Returns: None
         """
+
+
         self._max_epochs_since_update = max_epochs_since_update
         self._start_train()
         break_train = False
@@ -405,7 +411,9 @@ class BNN:
                 batch_idxs = idxs[:, batch_num * batch_size:(batch_num + 1) * batch_size]
                 self.sess.run(
                     self.train_op,
-                    feed_dict={self.sy_train_in: inputs[batch_idxs], self.sy_train_targ: targets[batch_idxs]}
+                    feed_dict={self.sy_train_in: inputs[batch_idxs],
+                               self.sy_train_targ: targets[batch_idxs],
+                               self.learning_rate: learning_rate}
                 )
                 grad_updates += 1
 
@@ -416,7 +424,8 @@ class BNN:
                             self.mse_loss,
                             feed_dict={
                                 self.sy_train_in: inputs[idxs[:, :max_logging]],
-                                self.sy_train_targ: targets[idxs[:, :max_logging]]
+                                self.sy_train_targ: targets[idxs[:, :max_logging]],
+                                self.learning_rate: learning_rate
                             }
                         )
                     named_losses = [['M{}'.format(i), losses[i]] for i in range(len(losses))]
@@ -426,14 +435,16 @@ class BNN:
                             self.mse_loss,
                             feed_dict={
                                 self.sy_train_in: inputs[idxs[:, :max_logging]],
-                                self.sy_train_targ: targets[idxs[:, :max_logging]]
+                                self.sy_train_targ: targets[idxs[:, :max_logging]],
+                                self.learning_rate: learning_rate
                             }
                         )
                     holdout_losses = self.sess.run(
                             self.mse_loss,
                             feed_dict={
                                 self.sy_train_in: holdout_inputs,
-                                self.sy_train_targ: holdout_targets
+                                self.sy_train_targ: holdout_targets,
+                                self.learning_rate: learning_rate
                             }
                         )
                     named_losses = [['M{}'.format(i), losses[i]] for i in range(len(losses))]
@@ -465,7 +476,8 @@ class BNN:
                 self.mse_loss,
                 feed_dict={
                     self.sy_train_in: holdout_inputs,
-                    self.sy_train_targ: holdout_targets
+                    self.sy_train_targ: holdout_targets,
+                    self.learning_rate: learning_rate
                 }
             )
 

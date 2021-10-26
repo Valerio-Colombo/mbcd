@@ -60,26 +60,38 @@ class MBCD:
                                num_networks=5, num_elites=2)
 
     def train(self, is_drifting=False, mask=None, gradient_coeff=None, batch_size=256, batch_window=10240, change_point=0):
-        if is_drifting:
-            chunk_num, X_c, Y_c = self.memory.to_train_batch_separated(batch_window, batch_size)
-            X, Y = self.memory.to_train_batch()
-            # X = X[-batch_window:]  # ????????????
-            # Y = Y[-batch_window:]
-            mask = np.flip(mask)
-            mask = np.squeeze(mask)
-            gradient_coeff = np.flip(gradient_coeff)
-            gradient_coeff = np.squeeze(gradient_coeff)
-            num_drifting_chunks = int(chunk_num) - int(change_point)
+        # if is_drifting:
+        #     chunk_num, X_c, Y_c = self.memory.to_train_batch_separated(batch_window, batch_size)
+        #     X, Y = self.memory.to_train_batch()
+        #     # X = X[-batch_window:]  # ????????????
+        #     # Y = Y[-batch_window:]
+        #     mask = np.flip(mask)
+        #     mask = np.squeeze(mask)
+        #     gradient_coeff = np.flip(gradient_coeff)
+        #     gradient_coeff = np.squeeze(gradient_coeff)
+        #     num_drifting_chunks = int(chunk_num) - int(change_point)
+        #
+        #     for i in range(num_drifting_chunks):
+        #         if True:  # mask[i]:
+        #             X_t = np.concatenate((X, np.repeat(X_c[i], 10, axis=0)), axis=0)
+        #             Y_t = np.concatenate((Y, np.repeat(Y_c[i], 10, axis=0)), axis=0)
+        #             self.models[self.current_model].train_rescaled(X_t, Y_t, batch_size=batch_size,
+        #                                                            holdout_ratio=0.1, gradient_coeff=gradient_coeff[i])
+        # else:
+        #     X, Y = self.memory.to_train_batch()
+        #     self.models[self.current_model].train(X, Y, batch_size=batch_size, holdout_ratio=0.1)
 
-            for i in range(num_drifting_chunks):
-                if True:  # mask[i]:
-                    X_t = np.concatenate((X, np.repeat(X_c[i], 10, axis=0)), axis=0)
-                    Y_t = np.concatenate((Y, np.repeat(Y_c[i], 10, axis=0)), axis=0)
-                    self.models[self.current_model].train_rescaled(X_t, Y_t, batch_size=batch_size,
-                                                                   holdout_ratio=0.1, gradient_coeff=gradient_coeff[i])
+        if self.counter > 36000:
+            print("TRAINING WITH DATASET SLICE!")
+            X, Y = self.memory.to_train_batch()
+            self.models[self.current_model].train(X[-2048:],
+                                                  Y[-2048:],
+                                                  batch_size=256,
+                                                  holdout_ratio=0.1,
+                                                  learning_rate=0.01)
         else:
             X, Y = self.memory.to_train_batch()
-            self.models[self.current_model].train(X, Y, batch_size=batch_size, holdout_ratio=0.1)
+            self.models[self.current_model].train(X, Y, batch_size=batch_size, holdout_ratio=0.1, learning_rate=0.001)
 
     def get_logprob2(self, x, means, variances):
         '''
