@@ -16,7 +16,9 @@ def construct_model(name, obs_dim=11, act_dim=3, rew_dim=1, hidden_dim=200, num_
 	model.add(FC(hidden_dim, activation="ReLU", weight_decay=0.000075))
 	model.add(FC(hidden_dim, activation="ReLU", weight_decay=0.000075))
 	model.add(FC(obs_dim+rew_dim, weight_decay=0.0001))
-	model.finalize(tf.train.AdamOptimizer, {"learning_rate": 0.001})
+
+	learning_rate = tf.placeholder(tf.float32, shape=[])
+	model.finalize(tf.train.AdamOptimizer, {"learning_rate": learning_rate})
 
 	# weights = model.get_weights()
 	return model
