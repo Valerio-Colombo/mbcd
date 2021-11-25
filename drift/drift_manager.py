@@ -46,7 +46,7 @@ class DriftHandler:
         num_data = self.model_drift_window_length/self.model_drift_chunk_size
         x = np.arange(num_data)
 
-        poly = PolynomialFeatures(4)  # TODO hardcoded polynomial grade
+        poly = PolynomialFeatures(1)  # TODO hardcoded polynomial grade. NOW put to 4
         phi = poly.fit_transform(x[:, np.newaxis])
         proto_H = np.matmul(np.linalg.inv(np.matmul(phi.transpose(), phi)), phi.transpose())
 

@@ -169,7 +169,7 @@ class SAC(OffPolicyRLModel):
 
         self.model_drift_chunk_size = 256  # same as batch size to optimize calculus
         self.model_drift_freq = 256
-        self.model_drift_threshold = 5000
+        self.model_drift_threshold = 370000
         self.model_drift_window_length = 10240
         self.drifting = False
 
@@ -541,6 +541,7 @@ class SAC(OffPolicyRLModel):
                         del self.replay_buffer._storage[:]
                         self.replay_buffer._next_idx = 0
                         print("DETECTED CONTEXT CHANGED TO {} AT STEP {}".format(self.deepMBCD.current_model, step))
+                        self.drifting = False
 
                     self.deepMBCD.add_experience(obs.copy(), unscaled_action.copy(), reward, new_obs.copy(), False)
 
@@ -551,7 +552,7 @@ class SAC(OffPolicyRLModel):
                     elif self.deepMBCD.counter < 40000:
                         self.model_train_freq = 250
                     elif self.deepMBCD.counter < 60000:
-                        self.model_train_freq = 1000  # 5000
+                        self.model_train_freq = 100  # 5000
                     else:
                         self.model_train_freq = 2000
 
@@ -567,19 +568,19 @@ class SAC(OffPolicyRLModel):
                         drift, change_point, mask = self.driftManager.check_env_drift(log_prob_chunks)
                         print("Regression ended")
 
-                        # if drift:
-                        #     self.drifting = True
-                        #     batch_size = 512
-                        #     change_point = np.rint(change_point/(batch_size/self.model_drift_chunk_size))
-                        #
-                        #     self.deepMBCD.train(is_drifting=self.drifting,
-                        #                         mask=mask,
-                        #                         gradient_coeff=self.driftManager.grad_coeff,
-                        #                         batch_size=batch_size,
-                        #                         batch_window=self.model_drift_window_length,
-                        #                         change_point=change_point)
-                        # else:
-                        #     self.drifting = False
+                        if drift:
+                            self.drifting = True
+                            batch_size = 4096
+                            change_point = np.rint(change_point/(batch_size/self.model_drift_chunk_size))
+
+                            self.deepMBCD.train(is_drifting=self.drifting,
+                                                mask=mask,
+                                                gradient_coeff=self.driftManager.grad_coeff,
+                                                batch_size=batch_size,
+                                                batch_window=self.model_drift_window_length,
+                                                change_point=change_point)
+                        else:
+                            self.drifting = False
 
                     if ((changed and self.deepMBCD.counter > 10) or (self.deepMBCD.counter % self.model_train_freq == 0)) and (not self.drifting):
                         if not self.deepMBCD.test_mode:
@@ -591,7 +592,7 @@ class SAC(OffPolicyRLModel):
                                 self.rollout_model_m2ac()
                             else:
                                 self.rollout_model()
-                        print("Rollout length: {}".format(self.rollout_length))
+                        print("Rollout length: {}\n".format(self.rollout_length))
 
                     # Store transition in the replay buffer.
                     if self.deepMBCD.counter < 5000:
@@ -716,8 +717,9 @@ class SAC(OffPolicyRLModel):
 
     def rollout_model(self):  # Simulated rollouts
         # Planning
+        print("Standard Rollout")
         for j in range(10):  # 10 samples of 10000 instead of 1 of 100000 to not allocate all gpu memory
-            print("iteration MBCD: {}".format(j))
+            #print("iteration MBCD: {}".format(j))
             obs, _, _, _, _ = self.deepMBCD.memory.sample(10000)
             fake_env = FakeEnv(self.deepMBCD.models[self.deepMBCD.current_model], self.env.spec.id)
             for plan_step in range(self.rollout_length):
@@ -746,12 +748,14 @@ class SAC(OffPolicyRLModel):
         3) Rank samples by u
         4) Get first w best samples and add them to the buffer
         """
+        print("M2AC")
+
         B = 100000
         num_sub_iter = 10
 
         for x in range(num_sub_iter):
             # 1)
-            print("iteration: {}".format(x))
+            #print("iteration M2AC: {}".format(x))
             B_sub_iter = int(B/num_sub_iter)
             obs, _, _, _, _ = self.deepMBCD.memory.sample(B_sub_iter)
             fake_env = FakeEnv(self.deepMBCD.models[self.deepMBCD.current_model], self.env.spec.id)

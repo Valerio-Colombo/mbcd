@@ -15,8 +15,10 @@ from scipy.io import savemat, loadmat
 
 from mbcd.models.utils import get_required_argument, TensorStandardScaler
 from mbcd.models.fc import FC
+
 from mbcd.utils.logger import Progress, Silent
-from sklearn.preprocessing import PolynomialFeatures
+
+import copy
 
 np.set_printoptions(precision=4)
 
@@ -26,7 +28,6 @@ class BNN:
     with ensembling).
     Code adapted from https://github.com/JannerM/mbpo/blob/master/mbpo/models/bnn.py
     """
-
     def __init__(self, params):
         """Initializes a class instance.
 
@@ -46,10 +47,9 @@ class BNN:
         self.name = get_required_argument(params, 'name', 'Must provide name.')
         self.model_dir = params.get('model_dir', None)
 
-        print('[ BNN ] Initializing model: {} | {} networks | {} elites'.format(params['name'], params['num_networks'],
-                                                                                params['num_elites']))
+        print('[ BNN ] Initializing model: {} | {} networks | {} elites'.format(params['name'], params['num_networks'], params['num_elites']))
         if params.get('sess', None) is None:
-            # config = tf.ConfigProto(device_count = {'GPU': 0})
+            #config = tf.ConfigProto(device_count = {'GPU': 0})
             config = tf.ConfigProto()
             config.gpu_options.allow_growth = True
             self._sess = tf.Session(config=config)
@@ -64,16 +64,10 @@ class BNN:
         self.scaler = None
 
         # Training objects
-        self.train_loss = None
-        self.accum_grads = None
-        self.zero_ops = None
-        self.accum_ops = None
-        self.scale_coeff = None
         self.learning_rate = None
         self.optimizer = None
         self.sy_train_in, self.sy_train_targ = None, None
-        self.grads, self.graph_vars = None, None
-        self.train_op, self.train_op_rescaled, self.mse_loss = None, None, None
+        self.train_op, self.mse_loss = None, None
 
         # Prediction objects
         self.sy_pred_in2d, self.sy_pred_mean2d_fac, self.sy_pred_var2d_fac = None, None, None
@@ -89,17 +83,17 @@ class BNN:
             self.num_elites = params['num_elites']
         else:
             self.num_nets = params.get('num_networks', 1)
-            self.num_elites = params['num_elites']  # params.get('num_elites', 1)
+            self.num_elites = params['num_elites'] #params.get('num_elites', 1)
             self.model_loaded = False
 
         if self.num_nets == 1:
             print("Created a neural network with variance predictions.")
         else:
-            print(
-                "Created an ensemble of {} neural networks with variance predictions | Elites: {}".format(self.num_nets,
-                                                                                                          self.num_elites))
+            print("Created an ensemble of {} neural networks with variance predictions | Elites: {}".format(self.num_nets, self.num_elites))
 
         self._model_inds = [i for i in range(self.num_nets)]
+
+        self._old_parameters = None # LITTLE HACK USED TO RESCALE PARAMETERS UPDATE. THIS WILL BE REMOVED! TODO find a good way to scale gradients dynamically
 
     @property
     def is_probabilistic(self):
@@ -183,14 +177,12 @@ class BNN:
         with self.sess.as_default():
             with tf.variable_scope(self.name):
                 self.scaler = TensorStandardScaler(self.name, self.layers[0].get_input_dim())
-                self.max_logvar = tf.Variable(np.ones([1, self.layers[-1].get_output_dim() // 2]) / 2.,
-                                              dtype=tf.float32,
+                self.max_logvar = tf.Variable(np.ones([1, self.layers[-1].get_output_dim() // 2])/2., dtype=tf.float32,
                                               name="max_log_var")
-                self.min_logvar = tf.Variable(-np.ones([1, self.layers[-1].get_output_dim() // 2]) * 10.,
-                                              dtype=tf.float32,
+                self.min_logvar = tf.Variable(-np.ones([1, self.layers[-1].get_output_dim() // 2])*10., dtype=tf.float32,
                                               name="min_log_var")
                 for i, layer in enumerate(self.layers):
-                    with tf.variable_scope(self.name + "Layer%i" % i):
+                    with tf.variable_scope(self.name+"Layer%i" % i):
                         layer.construct_vars()
                         self.decays.extend(layer.get_decays())
                         self.optvars.extend(layer.get_vars())
@@ -206,53 +198,29 @@ class BNN:
             self.sy_train_targ = tf.placeholder(dtype=tf.float32,
                                                 shape=[self.num_nets, None, self.layers[-1].get_output_dim() // 2],
                                                 name="training_targets")
-            self.train_loss = tf.reduce_sum(
-                self._compile_losses(self.sy_train_in, self.sy_train_targ, inc_var_loss=True))
-            self.train_loss += tf.add_n(self.decays)
-            self.train_loss += 0.01 * tf.reduce_sum(self.max_logvar) - 0.01 * tf.reduce_sum(self.min_logvar)
+            train_loss = tf.reduce_sum(self._compile_losses(self.sy_train_in, self.sy_train_targ, inc_var_loss=True))
+            train_loss += tf.add_n(self.decays)
+            train_loss += 0.01 * tf.reduce_sum(self.max_logvar) - 0.01 * tf.reduce_sum(self.min_logvar)
             self.mse_loss = self._compile_losses(self.sy_train_in, self.sy_train_targ, inc_var_loss=False)
 
-            self.train_op = self.optimizer.minimize(self.train_loss, var_list=self.optvars)
-            self.grads, self.graph_vars = zip(*self.optimizer.compute_gradients(self.train_loss, var_list=self.optvars))
-
-        self.scale_coeff = tf.placeholder(tf.float32)
-
-        # Accumulation ops and variables
-        # create a copy of all trainable variables with `0` as initial values
-        self.accum_grads = [tf.Variable(tf.zeros_like(t_var.initialized_value()), trainable=False) for t_var in
-                            self.optvars]
-        print("OPTVARS: {}".format(self.optvars))
-        print("TRAINABLEVARS: {}".format(tf.trainable_variables()))
-
-        # create an op to zero all accumulated vars
-        self.zero_ops = [tv.assign(tf.zeros_like(tv)) for tv in self.accum_grads]
-
-        # Create ops for accumulating the gradient
-        self.accum_ops = [accum_grad.assign_add(grad * self.scale_coeff) for (accum_grad, grad) in
-                          zip(self.accum_grads, self.grads)]
-
-        self.train_op_rescaled = self.optimizer.apply_gradients(zip(self.accum_grads, self.graph_vars))
+            self.train_op = self.optimizer.minimize(train_loss, var_list=self.optvars)
 
         # Initialize all variables
-        self.sess.run(tf.global_variables_initializer())
-        # self.sess.run(tf.variables_initializer(self.optvars + self.nonoptvars + self.optimizer.variables()))
+        self.sess.run(tf.variables_initializer(self.optvars + self.nonoptvars + self.optimizer.variables()))
 
         # Set up prediction
         with tf.variable_scope(self.name):
             self.sy_pred_in2d = tf.placeholder(dtype=tf.float32,
                                                shape=[None, self.layers[0].get_input_dim()],
                                                name="2D_training_inputs")
-            self.sy_pred_mean2d_fac, self.sy_pred_var2d_fac = self.create_prediction_tensors(self.sy_pred_in2d,
-                                                                                             factored=True)
+            self.sy_pred_mean2d_fac, self.sy_pred_var2d_fac = self.create_prediction_tensors(self.sy_pred_in2d, factored=True)
             self.sy_pred_mean2d = tf.reduce_mean(self.sy_pred_mean2d_fac, axis=0)
-            self.sy_pred_var2d = tf.reduce_mean(self.sy_pred_var2d_fac, axis=0) + tf.reduce_mean(
-                tf.square(self.sy_pred_mean2d_fac - self.sy_pred_mean2d), axis=0)
+            self.sy_pred_var2d = tf.reduce_mean(self.sy_pred_var2d_fac, axis=0) + tf.reduce_mean(tf.square(self.sy_pred_mean2d_fac - self.sy_pred_mean2d), axis=0)
 
             self.sy_pred_in3d = tf.placeholder(dtype=tf.float32,
                                                shape=[self.num_nets, None, self.layers[0].get_input_dim()],
                                                name="3D_training_inputs")
-            self.sy_pred_mean3d_fac, self.sy_pred_var3d_fac = self.create_prediction_tensors(self.sy_pred_in3d,
-                                                                                             factored=True)
+            self.sy_pred_mean3d_fac, self.sy_pred_var3d_fac = self.create_prediction_tensors(self.sy_pred_in3d, factored=True)
 
         # Load model if needed
         if self.model_loaded:
@@ -263,13 +231,15 @@ class BNN:
                     var.load(params_dict[str(i)])
         self.finalized = True
 
+        self._old_parameters = self.get_weights()
+
     ##################
     # Custom Methods #
     ##################
 
     def get_weights(self):
         return {idx: [layer.get_model_vars(idx, self.sess) for layer in self.layers] for idx in range(self.num_nets)}
-
+    
     def set_weights(self, weights):
         keys = ['weights', 'biases']
         ops = []
@@ -277,7 +247,7 @@ class BNN:
         for layer in range(num_layers):
             # net_state = self._state[i]
             params = {key: np.stack([weights[net][layer][key] for net in range(self.num_nets)]) for key in keys}
-            ops.extend(self.layers[layer].set_model_vars(params))
+            ops.extend(self.layers[layer].set_model_vars(params, self.sess))
         self.sess.run(ops)
 
     def _save_state(self, idx):
@@ -285,14 +255,14 @@ class BNN:
 
     def _set_state(self):
         keys = ['weights', 'biases']
-        # ops = []
+        #ops = []
         num_layers = len(self.layers)
         for layer in range(num_layers):
             # net_state = self._state[i]
             params = {key: np.stack([self._state[net][layer][key] for net in range(self.num_nets)]) for key in keys}
             self.layers[layer].set_model_vars(params, self.sess)
-            # ops.extend()
-        # self.sess.run(ops)
+            #ops.extend()
+        #self.sess.run(ops)
 
     def _save_best(self, epoch, holdout_losses):
         updated = False
@@ -306,7 +276,7 @@ class BNN:
                 updated = True
                 improvement = (best - current) / best
                 # print('epoch {} | updated {} | improvement: {:.4f} | best: {:.4f} | current: {:.4f}'.format(epoch, i, improvement, best, current))
-
+        
         if updated:
             self._epochs_since_update = 0
         else:
@@ -344,7 +314,7 @@ class BNN:
             feed_dict={
                 self.sy_train_in: inputs,
                 self.sy_train_targ: targets
-            }
+                }
         )
         mean_elite_loss = np.sort(losses)[:self.num_elites].mean()
         return mean_elite_loss
@@ -352,13 +322,40 @@ class BNN:
     #################
     # Model Methods #
     #################
+    # def train_rescaled(self, inputs, targets,
+    #                    batch_size=32, max_epochs=None, max_epochs_since_update=5,
+    #                    hide_progress=False, holdout_ratio=0.0, max_logging=5000, max_grad_updates=None, timer=None,
+    #                    max_t=None, gradient_coeff=1):
+    #     print("Started gradient rescaling")
+    #
+    #     self._old_parameters = self.get_weights()
+    #     self.train(inputs, targets,
+    #                batch_size=batch_size, max_epochs=max_epochs, max_epochs_since_update=max_epochs_since_update,
+    #                hide_progress=hide_progress, holdout_ratio=holdout_ratio, max_logging=max_logging,
+    #                max_grad_updates=max_grad_updates, timer=timer, max_t=max_t)
+    #     unscaled_parameters = self.get_weights()  # Updated but not scaled nets parameters
+    #     very_old_parameters = copy.deepcopy(self._old_parameters)
+    #
+    #     for net_key in unscaled_parameters.keys():
+    #         for idx_layer, layer in enumerate(unscaled_parameters.get(net_key)):
+    #             delta_weights = layer.get("weights") - self._old_parameters.get(net_key)[idx_layer].get("weights")
+    #             delta_biases = layer.get("biases") - self._old_parameters.get(net_key)[idx_layer].get("biases")
+    #
+    #             delta_weights = delta_weights * gradient_coeff
+    #             delta_biases = delta_biases * gradient_coeff  # TODO put real coeff
+    #
+    #             self._old_parameters.get(net_key)[idx_layer]["weights"] += delta_weights
+    #             self._old_parameters.get(net_key)[idx_layer]["biases"] += delta_biases
+    #
+    #     self.set_weights(self._old_parameters)
+    #     print("Gradient rescaled")
 
-    # @profile
-    def train(self, inputs, targets,
+    def train_rescaled(self, inputs, targets,
               batch_size=32, max_epochs=None, max_epochs_since_update=5,
-              hide_progress=False, holdout_ratio=0.0, max_logging=5000, max_grad_updates=None, timer=None,
-              max_t=None):
+              hide_progress=False, holdout_ratio=0.0, max_logging=5000, max_grad_updates=None, timer=None, max_t=None,
+              learning_rate=0.001):
         """Trains/Continues network training
+
         Arguments:
             inputs (np.ndarray): Network inputs in the training dataset in rows.
             targets (np.ndarray): Network target outputs in the training dataset in rows corresponding
@@ -366,8 +363,11 @@ class BNN:
             batch_size (int): The minibatch size to be used for training.
             epochs (int): Number of epochs (full network passes that will be done.
             hide_progress (bool): If True, hides the progress bar shown at the beginning of training.
+
         Returns: None
         """
+
+
         self._max_epochs_since_update = max_epochs_since_update
         self._start_train()
         break_train = False
@@ -387,7 +387,7 @@ class BNN:
         holdout_inputs = np.tile(holdout_inputs[None], [self.num_nets, 1, 1])
         holdout_targets = np.tile(holdout_targets[None], [self.num_nets, 1, 1])
 
-        print('\n[ BNN ] Training {} | Holdout: {}'.format(inputs.shape, holdout_inputs.shape))
+        print('[ BNN ] Training {} | Holdout: {}'.format(inputs.shape, holdout_inputs.shape))
 
         idxs = np.random.randint(inputs.shape[0], size=[self.num_nets, inputs.shape[0]])
         if hide_progress:
@@ -405,49 +405,53 @@ class BNN:
 
         t0 = time.time()
         grad_updates = 0
+
+        weights_pre_training = self.get_weights()
+
         for epoch in epoch_iter:
-            # print("Normal - Epoch: {}".format(epoch))
+            print("Epoch: {}".format(epoch))
             for batch_num in range(int(np.ceil(idxs.shape[-1] / batch_size))):
                 batch_idxs = idxs[:, batch_num * batch_size:(batch_num + 1) * batch_size]
                 self.sess.run(
                     self.train_op,
                     feed_dict={self.sy_train_in: inputs[batch_idxs],
                                self.sy_train_targ: targets[batch_idxs],
-                               self.learning_rate: 0.001}
+                               self.learning_rate: learning_rate}
                 )
-                # print("Classic loss: {}".format(loss))
                 grad_updates += 1
 
             idxs = shuffle_rows(idxs)
             if not hide_progress:
                 if holdout_ratio < 1e-12:
                     losses = self.sess.run(
-                        self.mse_loss,
-                        feed_dict={
-                            self.sy_train_in: inputs[idxs[:, :max_logging]],
-                            self.sy_train_targ: targets[idxs[:, :max_logging]]
-                        }
-                    )
+                            self.mse_loss,
+                            feed_dict={
+                                self.sy_train_in: inputs[idxs[:, :max_logging]],
+                                self.sy_train_targ: targets[idxs[:, :max_logging]],
+                                self.learning_rate: learning_rate
+                            }
+                        )
                     named_losses = [['M{}'.format(i), losses[i]] for i in range(len(losses))]
                     progress.set_description(named_losses)
                 else:
                     losses = self.sess.run(
-                        self.mse_loss,
-                        feed_dict={
-                            self.sy_train_in: inputs[idxs[:, :max_logging]],
-                            self.sy_train_targ: targets[idxs[:, :max_logging]]
-                        }
-                    )
+                            self.mse_loss,
+                            feed_dict={
+                                self.sy_train_in: inputs[idxs[:, :max_logging]],
+                                self.sy_train_targ: targets[idxs[:, :max_logging]],
+                                self.learning_rate: learning_rate
+                            }
+                        )
                     holdout_losses = self.sess.run(
-                        self.mse_loss,
-                        feed_dict={
-                            self.sy_train_in: holdout_inputs,
-                            self.sy_train_targ: holdout_targets
-                        }
-                    )
+                            self.mse_loss,
+                            feed_dict={
+                                self.sy_train_in: holdout_inputs,
+                                self.sy_train_targ: holdout_targets,
+                                self.learning_rate: learning_rate
+                            }
+                        )
                     named_losses = [['M{}'.format(i), losses[i]] for i in range(len(losses))]
-                    named_holdout_losses = [['V{}'.format(i), holdout_losses[i]] for i in
-                                            range(len(holdout_losses))]
+                    named_holdout_losses = [['V{}'.format(i), holdout_losses[i]] for i in range(len(holdout_losses))]
                     named_losses = named_losses + named_holdout_losses + [['T', time.time() - t0]]
                     progress.set_description(named_losses)
 
@@ -463,7 +467,6 @@ class BNN:
                 # print('Breaking because of timeout: {}! | (max: {})\n'.format(t, max_t))
                 # time.sleep(5)
                 break
-        print("Trained with normal for {} epochs".format(epoch + 1))
 
         if holdout_ratio > 0:
             progress.stamp()
@@ -476,7 +479,8 @@ class BNN:
                 self.mse_loss,
                 feed_dict={
                     self.sy_train_in: holdout_inputs,
-                    self.sy_train_targ: holdout_targets
+                    self.sy_train_targ: holdout_targets,
+                    self.learning_rate: learning_rate
                 }
             )
 
@@ -487,49 +491,22 @@ class BNN:
 
             val_loss = (np.sort(holdout_losses)[:self.num_elites]).mean()
             model_metrics = {'val_loss': val_loss}
-            print('[ BNN ] Holdout', np.sort(holdout_losses), model_metrics, '\n')
+            print('[ BNN ] Holdout', np.sort(holdout_losses), model_metrics)
+            self._old_parameters = self.get_weights()
+
             return OrderedDict(model_metrics)
             # return np.sort(holdout_losses)[]
 
             # pdb.set_trace()
         else:
-            self._model_inds = [0, 1, 2, 3, 4]
-
-    def generate_grad_coeff_poly(self, num_batch=40, poly_grade=4):
-        poly = PolynomialFeatures(poly_grade)
-
-        scale = 1
-        x = np.linspace(0, num_batch * scale, num=num_batch)
-        phi = poly.fit_transform(x[:, np.newaxis])
-        proto_H = np.matmul(np.linalg.inv(np.matmul(phi.transpose(), phi)), phi.transpose())
-        fut_step = np.array([num_batch])[None]
-        grad = np.matmul(poly.fit_transform(fut_step), proto_H)
-        # grad = np.flip(grad)
-
-        return grad
-
-    def exp_basis(self, x):
-        return np.array([1, np.power(1.1, x)])
-
-    def generate_grad_coeff_exp(self, num_batch=40):  # low->high
-        x = np.linspace(0, num_batch * 1.15, num=num_batch)
-        basis_dim = self.exp_basis(1).shape[0]
-
-        phi = np.ones([num_batch, basis_dim])
-        for idx in range(num_batch):
-            phi[idx] = self.exp_basis(x[idx])
-        proto_H = np.matmul(np.linalg.inv(np.matmul(phi.transpose(), phi)), phi.transpose())
-        fut_step_t = self.exp_basis(num_batch)
-        grad = np.matmul(fut_step_t, proto_H)
-        # grad = np.flip(grad)
-
-        return grad
+            self._model_inds = [0,1,2,3,4]
+            return None
 
     # @profile
-    def train_modified_holdout(self, inputs, targets,
-                               batch_size=32, max_epochs=None, max_epochs_since_update=5,
-                               hide_progress=False, holdout_ratio=0.0, max_logging=5000,
-                               max_grad_updates=None, timer=None, max_t=None, lr=0.001):
+    def train(self, inputs, targets,
+              batch_size=32, max_epochs=None, max_epochs_since_update=5,
+              hide_progress=False, holdout_ratio=0.0, max_logging=5000, max_grad_updates=None, timer=None, max_t=None,
+              learning_rate=0.001):
         """Trains/Continues network training
 
         Arguments:
@@ -542,6 +519,8 @@ class BNN:
 
         Returns: None
         """
+
+
         self._max_epochs_since_update = max_epochs_since_update
         self._start_train()
         break_train = False
@@ -553,57 +532,17 @@ class BNN:
         with self.sess.as_default():
             self.scaler.fit(inputs)
 
+        # Split into training and holdout sets
         num_holdout = min(int(inputs.shape[0] * holdout_ratio), max_logging)
-
-        ############
-        # 1) Calculate gradient and sampling coefficients
-        total_num_batch = int(np.floor(inputs.shape[0] / batch_size))
-        # scale_coeff = self.generate_grad_coeff_exp(num_batch=total_num_batch)
-        scale_coeff = np.full((total_num_batch), 1/total_num_batch)
-        # scale_coeff = self.generate_grad_coeff_poly(num_batch=total_num_batch, poly_grade=4)
-        sampling_coeff = np.repeat(scale_coeff, batch_size)
-        for i in range(sampling_coeff.shape[0]):
-            if sampling_coeff[i] < 0:
-                sampling_coeff[i] = 0
-        sampling_coeff = sampling_coeff / np.sum(sampling_coeff)  # normalize
-        print("Sampling coeff sum: {}".format(np.sum(sampling_coeff)))
-
-        # 2) Sample holdout set
-        idx_holdout = np.empty([num_holdout], dtype=int)
-        idxs_i = np.arange(inputs.shape[0], dtype=int)[-total_num_batch * batch_size:]
-
-        for s in range(num_holdout):
-            idx_holdout[s] = np.random.choice(a=idxs_i, p=sampling_coeff)
-
-        holdout_inputs = inputs[idx_holdout]
+        permutation = np.random.permutation(inputs.shape[0])
+        inputs, holdout_inputs = inputs[permutation[num_holdout:]], inputs[permutation[:num_holdout]]
+        targets, holdout_targets = targets[permutation[num_holdout:]], targets[permutation[:num_holdout]]
         holdout_inputs = np.tile(holdout_inputs[None], [self.num_nets, 1, 1])
-        holdout_targets = targets[idx_holdout]
         holdout_targets = np.tile(holdout_targets[None], [self.num_nets, 1, 1])
-
-        # 3) Delete holdout data from inputs
-        train_inputs = np.delete(inputs, idx_holdout, axis=0)
-        train_targets = np.delete(targets, idx_holdout, axis=0)
-
-        train_num_batch = int(np.floor(train_inputs.shape[0] / batch_size))
-        train_inputs = train_inputs[-train_num_batch * batch_size:]
-        train_targets = train_targets[-train_num_batch * batch_size:]
-
-        # 4) Divide in batches
-
-        train_inputs_b = np.array(np.split(train_inputs, train_num_batch))
-        train_targets_b = np.array(np.split(train_targets, train_num_batch))
-
-        ############
-
-        # permutation = np.random.permutation(inputs.shape[0])
-        # inputs, holdout_inputs = inputs[num_holdout:], inputs[:num_holdout]
-        # targets, holdout_targets = targets[num_holdout:], targets[:num_holdout]
-        # holdout_inputs = np.tile(holdout_inputs[None], [self.num_nets, 1, 1])
-        # holdout_targets = np.tile(holdout_targets[None], [self.num_nets, 1, 1])
 
         print('[ BNN ] Training {} | Holdout: {}'.format(inputs.shape, holdout_inputs.shape))
 
-        # idxs = np.random.randint(inputs.shape[0], size=[self.num_nets, inputs.shape[0]])
+        idxs = np.random.randint(inputs.shape[0], size=[self.num_nets, inputs.shape[0]])
         if hide_progress:
             progress = Silent()
         else:
@@ -617,105 +556,54 @@ class BNN:
         # else:
         #     epoch_range = trange(epochs, unit="epoch(s)", desc="Network training")
 
-        # total_num_batch = int(np.ceil(idxs.shape[-1] / batch_size))
-        #
-        # # scale_coeff = self.generate_grad_coeff_poly(num_batch=total_num_batch, poly_grade=2)
-        # scale_coeff = self.generate_grad_coeff_exp(num_batch=total_num_batch)
-
         t0 = time.time()
         grad_updates = 0
+
+        weights_pre_training = self.get_weights()
+
         for epoch in epoch_iter:
-            # print("Modified - Epoch: {}".format(epoch))
-            for batch_num in range(train_num_batch):
-                # batch_idxs = np.arange(inputs.shape[0] - batch_size * (batch_num + 1),
-                #                        inputs.shape[0] - batch_size * batch_num)
-                # batch_idxs_arr = [batch_idxs for _ in range(self.num_nets)]
-                # arrays_stack = np.stack(batch_idxs_arr, axis=0)
-                curr_train_inputs = train_inputs_b[train_num_batch - batch_num - 1]
-                curr_train_targets = train_targets_b[train_num_batch - batch_num - 1]
-
-                curr_idxs = np.arange(batch_size)
-                np.random.shuffle(curr_idxs)
-                curr_train_inputs = curr_train_inputs[curr_idxs]
-                curr_train_targets = curr_train_targets[curr_idxs]
-
-                curr_train_inputs = [curr_train_inputs for _ in range(self.num_nets)]
-                curr_train_targets = [curr_train_targets for _ in range(self.num_nets)]
-
-                _, _loss = self.sess.run(
-                    (self.accum_ops, self.train_loss),
-                    feed_dict={self.sy_train_in: curr_train_inputs,
-                               self.sy_train_targ: curr_train_targets,
-                               self.scale_coeff: scale_coeff.item(total_num_batch - batch_num - 1)}
-                    # TODO invert. No more flip!!!! - ?
+            for batch_num in range(int(np.ceil(idxs.shape[-1] / batch_size))):
+                batch_idxs = idxs[:, batch_num * batch_size:(batch_num + 1) * batch_size]
+                self.sess.run(
+                    self.train_op,
+                    feed_dict={self.sy_train_in: inputs[batch_idxs],
+                               self.sy_train_targ: targets[batch_idxs],
+                               self.learning_rate: learning_rate}
                 )
-                losses = self.sess.run(
-                    self.mse_loss,
-                    feed_dict={
-                        self.sy_train_in: curr_train_inputs,
-                        self.sy_train_targ: curr_train_targets
-                    }
-                )
-                # print("Epoch: {} - Batch: {} - Train Loss: {} - MSE loss: {} - Coeff: {}".format(epoch, batch_num,
-                #                                                                                  _loss, losses,
-                #                                                                                  scale_coeff.item(
-                #                                                                                  total_num_batch - batch_num - 1)))
-
                 grad_updates += 1
 
-            self.sess.run(self.train_op_rescaled, feed_dict={self.learning_rate: lr})  # apply gradient
-            self.sess.run(self.zero_ops)  # reset for next epoch
-
-            # idxs = shuffle_rows(idxs)
+            idxs = shuffle_rows(idxs)
             if not hide_progress:
                 if holdout_ratio < 1e-12:
-                    if train_inputs.shape[0] > max_logging:
-                        train_inputs_loss = train_inputs[-max_logging:]
-                        train_targets_loss = train_targets[-max_logging:]
-                    else:
-                        train_inputs_loss = train_inputs
-                        train_targets_loss = train_targets
-
-                    train_inputs_loss = [train_inputs_loss for _ in range(self.num_nets)]
-                    train_targets_loss = [train_targets_loss for _ in range(self.num_nets)]
-
                     losses = self.sess.run(
-                        self.mse_loss,
-                        feed_dict={
-                            self.sy_train_in: train_inputs_loss,
-                            self.sy_train_targ: train_targets_loss
-                        }
-                    )
+                            self.mse_loss,
+                            feed_dict={
+                                self.sy_train_in: inputs[idxs[:, :max_logging]],
+                                self.sy_train_targ: targets[idxs[:, :max_logging]],
+                                self.learning_rate: learning_rate
+                            }
+                        )
                     named_losses = [['M{}'.format(i), losses[i]] for i in range(len(losses))]
                     progress.set_description(named_losses)
                 else:
-                    if train_inputs.shape[0] > max_logging:
-                        train_inputs_loss = train_inputs[-max_logging:]
-                        train_targets_loss = train_targets[-max_logging:]
-                    else:
-                        train_inputs_loss = train_inputs
-                        train_targets_loss = train_targets
-
-                    train_inputs_loss = [train_inputs_loss for _ in range(self.num_nets)]
-                    train_targets_loss = [train_targets_loss for _ in range(self.num_nets)]
-
                     losses = self.sess.run(
-                        self.mse_loss,
-                        feed_dict={
-                            self.sy_train_in: train_inputs_loss,
-                            self.sy_train_targ: train_targets_loss
-                        }
-                    )
+                            self.mse_loss,
+                            feed_dict={
+                                self.sy_train_in: inputs[idxs[:, :max_logging]],
+                                self.sy_train_targ: targets[idxs[:, :max_logging]],
+                                self.learning_rate: learning_rate
+                            }
+                        )
                     holdout_losses = self.sess.run(
-                        self.mse_loss,
-                        feed_dict={
-                            self.sy_train_in: holdout_inputs,
-                            self.sy_train_targ: holdout_targets
-                        }
-                    )
+                            self.mse_loss,
+                            feed_dict={
+                                self.sy_train_in: holdout_inputs,
+                                self.sy_train_targ: holdout_targets,
+                                self.learning_rate: learning_rate
+                            }
+                        )
                     named_losses = [['M{}'.format(i), losses[i]] for i in range(len(losses))]
-                    named_holdout_losses = [['V{}'.format(i), holdout_losses[i]] for i in
-                                            range(len(holdout_losses))]
+                    named_holdout_losses = [['V{}'.format(i), holdout_losses[i]] for i in range(len(holdout_losses))]
                     named_losses = named_losses + named_holdout_losses + [['T', time.time() - t0]]
                     progress.set_description(named_losses)
 
@@ -724,14 +612,16 @@ class BNN:
             progress.update()
             t = time.time() - t0
             if break_train or (max_grad_updates and grad_updates > max_grad_updates):
+                print("Epoch: {}".format(epoch))
                 break
             if max_t and t > max_t:
                 descr = 'Breaking because of timeout: {}! (max: {})'.format(t, max_t)
                 progress.append_description(descr)
                 # print('Breaking because of timeout: {}! | (max: {})\n'.format(t, max_t))
                 # time.sleep(5)
+                print("Epoch: {}".format(epoch))
                 break
-        print("Trained with modified for {} epochs".format(epoch+1))
+
 
         if holdout_ratio > 0:
             progress.stamp()
@@ -744,7 +634,8 @@ class BNN:
                 self.mse_loss,
                 feed_dict={
                     self.sy_train_in: holdout_inputs,
-                    self.sy_train_targ: holdout_targets
+                    self.sy_train_targ: holdout_targets,
+                    self.learning_rate: learning_rate
                 }
             )
 
@@ -756,12 +647,17 @@ class BNN:
             val_loss = (np.sort(holdout_losses)[:self.num_elites]).mean()
             model_metrics = {'val_loss': val_loss}
             print('[ BNN ] Holdout', np.sort(holdout_losses), model_metrics)
+            self._old_parameters = self.get_weights()
+
             return OrderedDict(model_metrics)
             # return np.sort(holdout_losses)[]
 
             # pdb.set_trace()
         else:
-            self._model_inds = [0, 1, 2, 3, 4]
+            self._model_inds = [0,1,2,3,4]
+            return None
+
+
 
     def predict(self, inputs, factored=False, *args, **kwargs):
         """Returns the distribution predicted by the model for each input vector in inputs.
@@ -818,18 +714,18 @@ class BNN:
         var_vals = {}
         for i, var_val in enumerate(self.sess.run(self.nonoptvars + self.optvars)):
             var_vals[str(i)] = var_val
-        savemat('weights/' + self.name + '.mat', var_vals)
-
+        savemat('weights/'+self.name+'.mat', var_vals)
+    
     def load_weights(self):
         with self.sess.as_default():
-            params_dict = loadmat('weights/' + self.name + '.mat')
+            params_dict = loadmat('weights/'+self.name+'.mat')
             all_vars = self.nonoptvars + self.optvars
             for i, var in enumerate(all_vars):
                 var.load(params_dict[str(i)])
 
     def save(self, savedir, timestep):
         """Saves all information required to recreate this model in two files in savedir
-        (or self.model_dir if savedir is None), one containing the model structuure and the other
+        (or self.model_dir if savedir is None), one containing the model structure and the other
         containing all variables in the network.
 
         savedir (str): (Optional) Path to which files will be saved. If not provided, self.model_dir
@@ -895,11 +791,11 @@ class BNN:
         for layer in self.layers:
             cur_out = layer.compute_output_tensor(cur_out)
 
-        mean = cur_out[:, :, :dim_output // 2]
+        mean = cur_out[:, :, :dim_output//2]
         if self.end_act is not None:
             mean = self.end_act(mean)
 
-        logvar = self.max_logvar - tf.nn.softplus(self.max_logvar - cur_out[:, :, dim_output // 2:])
+        logvar = self.max_logvar - tf.nn.softplus(self.max_logvar - cur_out[:, :, dim_output//2:])
         logvar = self.min_logvar + tf.nn.softplus(logvar - self.min_logvar)
 
         if ret_log_var:
@@ -932,3 +828,4 @@ class BNN:
             total_losses = tf.reduce_mean(tf.reduce_mean(tf.square(mean - targets), axis=-1), axis=-1)
 
         return total_losses
+

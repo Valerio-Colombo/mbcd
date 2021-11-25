@@ -33,13 +33,13 @@ class NonStationaryEnv(Wrapper):
             self.tasks.popleft()
             self.change_freq.popleft()
             self.env_task = Env(self.sim_type, self.current_task, self.current_change_freq)
-
             print("CHANGED TO TASK {} AT STEP {}!".format(self.current_task, self.counter))
+            self.counter = 0
 
         pos_before = self.unwrapped.sim.data.qpos[0]
         env_parameters = self.env_task.get_params()
 
-        # print(env_parameters["malfunction_mask"])
+        #print(env_parameters["malfunction_mask"])
         action = env_parameters["malfunction_mask"] * action
 
         for part in self.unwrapped.sim.model._body_name2id.values():
@@ -59,7 +59,8 @@ class NonStationaryEnv(Wrapper):
 
         if not(self.counter % 100):
             print("Step :{}".format(self.counter))
-            print("Velocity_Avg: {}".format(self.forward_vel_avg/100))
+            print("Velocity_Avg: {} - Target Velocity: {}".format(self.forward_vel_avg/100,
+                                                                  env_parameters["target_velocity"]))
             self.forward_vel_avg = 0
 
         self.counter += 1
