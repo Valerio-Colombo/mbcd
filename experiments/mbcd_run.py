@@ -2,7 +2,7 @@ import os
 import gym
 import numpy as np
 import pandas as pd
-import random 
+import random
 import argparse
 
 import tensorflow as tf
@@ -86,7 +86,7 @@ def main(config):
 if __name__ == '__main__':
 
     if args.env == 'halfcheetah':
-        tasks = ExpType.Scheduler_Test
+        tasks = ExpType.Normal
         change_freq = tasks.value["change_freq"]
         if isinstance(change_freq, list):
             total_timesteps = sum(tasks.value["change_freq"])
@@ -94,7 +94,7 @@ if __name__ == '__main__':
             total_timesteps = change_freq * len(tasks.value["tasks"])
 
         if args.roll == 'm2ac':
-            rollout_schedule = [5000, 10000, 1, 4]
+            rollout_schedule = [5000, 20000, 1, 8]
         else:
             rollout_schedule = [5000, 10000, 1, 1]
         config = {

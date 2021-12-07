@@ -29,7 +29,7 @@ class MBCD:
         self.threshold = cusum_threshold
         self.max_std = max_std
         self.num_stds = num_stds
-        self.min_steps = 5000000  # TODO put 5000
+        self.min_steps = 5000  # TODO put 5000
         self.changed = False
         self.step = 0
 
@@ -60,13 +60,19 @@ class MBCD:
                                num_networks=5, num_elites=2)
 
     def train(self, is_drifting=False, mask=None, gradient_coeff=None, batch_size=256, batch_window=10240, change_point=0):
-        # print("Counter: {}".format(self.counter))
-        if self.counter < 380000:
+        if True:
             X, Y = self.memory.to_train_batch()
-            self.models[self.current_model].train(X, Y, batch_size=256, holdout_ratio=0.1)
-        else:
-            X, Y = self.memory.to_train_batch()
-            self.models[self.current_model].train_modified_holdout(X, Y, batch_size=256, holdout_ratio=0.1)
+            num_samples = X.shape[0]
+            if num_samples >= 2560:
+                self.models[self.current_model].train(X[-2560:], Y[-2560:],
+                                                      batch_size=256,
+                                                      holdout_ratio=0.2,
+                                                      max_epochs_since_update=10)
+            else:
+                self.models[self.current_model].train(X, Y,
+                                                      batch_size=256,
+                                                      holdout_ratio=0.2,
+                                                      max_epochs_since_update=10)
 
     def get_logprob2(self, x, means, variances):
         '''

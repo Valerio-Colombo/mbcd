@@ -558,8 +558,8 @@ class BNN:
         ############
         # 1) Calculate gradient and sampling coefficients
         total_num_batch = int(np.floor(inputs.shape[0] / batch_size))
-        # scale_coeff = self.generate_grad_coeff_exp(num_batch=total_num_batch)
-        scale_coeff = np.full((total_num_batch), 1/total_num_batch)
+        scale_coeff = self.generate_grad_coeff_exp(num_batch=total_num_batch)
+        # scale_coeff = np.full((total_num_batch), 1/total_num_batch)
         # scale_coeff = self.generate_grad_coeff_poly(num_batch=total_num_batch, poly_grade=4)
         sampling_coeff = np.repeat(scale_coeff, batch_size)
         for i in range(sampling_coeff.shape[0]):
@@ -625,7 +625,7 @@ class BNN:
         t0 = time.time()
         grad_updates = 0
         for epoch in epoch_iter:
-            # print("Modified - Epoch: {}".format(epoch))
+            print("Modified - Epoch: {}".format(epoch))
             for batch_num in range(train_num_batch):
                 # batch_idxs = np.arange(inputs.shape[0] - batch_size * (batch_num + 1),
                 #                        inputs.shape[0] - batch_size * batch_num)

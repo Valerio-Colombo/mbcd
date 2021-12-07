@@ -169,7 +169,7 @@ class SAC(OffPolicyRLModel):
 
         self.model_drift_chunk_size = 256  # same as batch size to optimize calculus
         self.model_drift_freq = 256
-        self.model_drift_threshold = 370000
+        self.model_drift_threshold = 15000
         self.model_drift_window_length = 10240
         self.drifting = False
 
@@ -202,7 +202,8 @@ class SAC(OffPolicyRLModel):
 
     @property
     def model_buffer_size(self):
-        return int(self.rollout_length * 1000 * 100000 / self.model_train_freq)  # think about this...
+        # return int(self.rollout_length * 1000 * 100000 / self.model_train_freq)  # think about this...
+        return int(self.rollout_length * 10000)
 
     def _get_pretrain_placeholders(self):
         policy = self.policy_tf
@@ -552,35 +553,36 @@ class SAC(OffPolicyRLModel):
                     elif self.deepMBCD.counter < 40000:
                         self.model_train_freq = 250
                     elif self.deepMBCD.counter < 60000:
-                        self.model_train_freq = 100  # 5000
+                        self.model_train_freq = 500  # 5000
                     else:
                         self.model_train_freq = 2000
 
-                    if (self.deepMBCD.counter % self.model_drift_freq == 0) and (self.deepMBCD.counter >= self.model_drift_threshold):
-                        log_prob_chunks = self.deepMBCD.calculate_logprob_chunks(self.model_drift_chunk_size, self.model_drift_window_length)
-
-                        suffix = str(self.deepMBCD.counter) + "_" + str(self.deepMBCD.current_model)
-                        print("Saving drift log...")
-                        self.driftManager.save_drift_log(log_prob_chunks, filename_suffix=suffix)
-                        print("Drift log saved")
-
-                        print("Starting regression...")
-                        drift, change_point, mask = self.driftManager.check_env_drift(log_prob_chunks)
-                        print("Regression ended")
-
-                        if drift:
-                            self.drifting = True
-                            batch_size = 4096
-                            change_point = np.rint(change_point/(batch_size/self.model_drift_chunk_size))
-
-                            self.deepMBCD.train(is_drifting=self.drifting,
-                                                mask=mask,
-                                                gradient_coeff=self.driftManager.grad_coeff,
-                                                batch_size=batch_size,
-                                                batch_window=self.model_drift_window_length,
-                                                change_point=change_point)
-                        else:
-                            self.drifting = False
+                    # if (self.deepMBCD.counter % self.model_drift_freq == 0) and (self.deepMBCD.counter >= self.model_drift_threshold):
+                    #     log_prob_chunks = self.deepMBCD.calculate_logprob_chunks(self.model_drift_chunk_size, self.model_drift_window_length)
+                    #
+                    #     suffix = str(self.deepMBCD.counter) + "_" + str(self.deepMBCD.current_model)
+                    #     print("Saving drift log...")
+                    #     self.driftManager.save_drift_log(log_prob_chunks, filename_suffix=suffix)
+                    #     print("Drift log saved")
+                    #
+                    #     print("Starting regression...")
+                    #     #drift, change_point, mask = self.driftManager.check_env_drift(log_prob_chunks)
+                    #     drift = False
+                    #     print("Regression ended")
+                    #
+                    #     if drift:
+                    #         self.drifting = True
+                    #         batch_size = 4096
+                    #         change_point = np.rint(change_point/(batch_size/self.model_drift_chunk_size))
+                    #
+                    #         self.deepMBCD.train(is_drifting=self.drifting,
+                    #                             mask=mask,
+                    #                             gradient_coeff=self.driftManager.grad_coeff,
+                    #                             batch_size=batch_size,
+                    #                             batch_window=self.model_drift_window_length,
+                    #                             change_point=change_point)
+                    #     else:
+                    #         self.drifting = False
 
                     if ((changed and self.deepMBCD.counter > 10) or (self.deepMBCD.counter % self.model_train_freq == 0)) and (not self.drifting):
                         if not self.deepMBCD.test_mode:
@@ -717,7 +719,7 @@ class SAC(OffPolicyRLModel):
 
     def rollout_model(self):  # Simulated rollouts
         # Planning
-        print("Standard Rollout")
+        print("Standard Rollout \nReplay buffer size: {}".format(len(self.replay_buffer._storage)))
         for j in range(10):  # 10 samples of 10000 instead of 1 of 100000 to not allocate all gpu memory
             #print("iteration MBCD: {}".format(j))
             obs, _, _, _, _ = self.deepMBCD.memory.sample(10000)
@@ -737,7 +739,7 @@ class SAC(OffPolicyRLModel):
 
                 obs = next_obs_pred[nonterm_mask]
 
-    def rollout_model_m2ac(self, samples_perc=0.25, alpha=0.001):
+    def rollout_model_m2ac(self, samples_perc=0.5, alpha=0.001):
         """
         1) Randomly sample B state(s) from from memory with replacement
         2) For every step of the rollouts and for every state
@@ -750,7 +752,7 @@ class SAC(OffPolicyRLModel):
         """
         print("M2AC")
 
-        B = 100000
+        B = 10000
         num_sub_iter = 10
 
         for x in range(num_sub_iter):
