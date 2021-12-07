@@ -101,7 +101,7 @@ if __name__ == '__main__':
                 'env': NonStationaryEnv(gym.envs.make('HalfCheetah-v2'), tasks=tasks),
                 'rollout_schedule': rollout_schedule,
                 'batch_size': 256,
-                'gradient_steps': 20,
+                'gradient_steps': 5000,
                 'target_entropy': 'auto',
                 'ent_coef': 'auto',
                 'max_std': 0.5,

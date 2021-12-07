@@ -196,6 +196,7 @@ class SAC(OffPolicyRLModel):
         self.load_pre_trained_model = load_pre_trained_model
         if self.load_pre_trained_model:
             self.deepMBCD.load(num_models=1, load_policy=True)  # load only normal model for now TODO make multi model loading
+            self.learning_starts = -1
 
         self.save_gifs = save_gifs
         self.rollout_mode = rollout_mode
@@ -547,15 +548,25 @@ class SAC(OffPolicyRLModel):
                     self.deepMBCD.add_experience(obs.copy(), unscaled_action.copy(), reward, new_obs.copy(), False)
 
                     if self.deepMBCD.counter < 250:
-                        self.model_train_freq = 10
+                        self.model_train_freq = 10  # 10
+                        self.gradient_steps = self.model_train_freq * 20
                     elif self.deepMBCD.counter < 5000:
-                        self.model_train_freq = 100
+                        self.model_train_freq = 100  # 100
+                        self.gradient_steps = self.model_train_freq * 20
+                    elif self.deepMBCD.counter < 20000:
+                        self.model_train_freq = 175  # 250
+                        self.gradient_steps = self.model_train_freq * 15
                     elif self.deepMBCD.counter < 40000:
-                        self.model_train_freq = 250
+                        self.model_train_freq = 250  # 250
+                        self.gradient_steps = self.model_train_freq * 10
                     elif self.deepMBCD.counter < 60000:
-                        self.model_train_freq = 500  # 5000
+                        self.model_train_freq = 500  # 500
+                        self.gradient_steps = self.model_train_freq * 10
                     else:
                         self.model_train_freq = 2000
+                        self.gradient_steps = self.model_train_freq * 10
+                    self.train_freq = self.model_train_freq
+
 
                     # if (self.deepMBCD.counter % self.model_drift_freq == 0) and (self.deepMBCD.counter >= self.model_drift_threshold):
                     #     log_prob_chunks = self.deepMBCD.calculate_logprob_chunks(self.model_drift_chunk_size, self.model_drift_window_length)
@@ -752,7 +763,7 @@ class SAC(OffPolicyRLModel):
         """
         print("M2AC")
 
-        B = 10000
+        B = int(10000/samples_perc)
         num_sub_iter = 10
 
         for x in range(num_sub_iter):
