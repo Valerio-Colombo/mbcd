@@ -63,16 +63,41 @@ class MBCD:
         if True:
             X, Y = self.memory.to_train_batch()
             num_samples = X.shape[0]
-            if num_samples >= 2560:
-                self.models[self.current_model].train(X[-2560:], Y[-2560:],
+            training_window = 6400  # 6400
+            if num_samples >= training_window:
+                self.models[self.current_model].train(X[-training_window:], Y[-training_window:],
                                                       batch_size=256,
                                                       holdout_ratio=0.2,
-                                                      max_epochs_since_update=10)
+                                                      max_epochs_since_update=5)
             else:
                 self.models[self.current_model].train(X, Y,
                                                       batch_size=256,
                                                       holdout_ratio=0.2,
-                                                      max_epochs_since_update=10)
+                                                      max_epochs_since_update=5)
+
+    def train_pro(self):
+        X, Y = self.memory.to_train_batch()
+        num_samples = X.shape[0]
+        training_window = 6400
+        print("Counter: {}".format(self.counter))
+        if self.counter > 44000:
+            self.models[self.current_model].train_modified_holdout(X[-training_window:], Y[-training_window:],
+                                                                   batch_size=64,
+                                                                   holdout_ratio=0.2,
+                                                                   max_epochs_since_update=5,
+                                                                   lr=0.0001)
+        else:
+            if num_samples >= training_window:
+                self.models[self.current_model].train(X[-training_window:], Y[-training_window:],
+                                                      batch_size=64,
+                                                      holdout_ratio=0.2,
+                                                      max_epochs_since_update=5)
+            else:
+                self.models[self.current_model].train(X, Y,
+                                                      batch_size=64,
+                                                      holdout_ratio=0.2,
+                                                      max_epochs_since_update=5)
+
 
     def get_logprob2(self, x, means, variances):
         '''

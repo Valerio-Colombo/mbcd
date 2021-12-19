@@ -6,9 +6,9 @@ import subprocess
 old_stdout = sys.stdout
 f = open(os.devnull, 'w')
 
-venv_path = '/home/valerio/PycharmProjects/mbcd/venv/bin/python'
-script_path = '/home/valerio/PycharmProjects/mbcd/experiments/mbcd_run.py'
-weight_path = '/home/valerio/PycharmProjects/mbcd/weights'
+venv_path = '/media/valerio/93f88e81-c907-4ae8-99d0-345b3c02d308/valerio/MBCD/mbcd/venv/bin'
+script_path = '/media/valerio/93f88e81-c907-4ae8-99d0-345b3c02d308/valerio/MBCD/mbcd/experiments/mbcd_run.py'
+weight_path = '/media/valerio/93f88e81-c907-4ae8-99d0-345b3c02d308/valerio/MBCD/mbcd/weights'
 algo_param = '-algo mbcd'
 roll_param = ''
 

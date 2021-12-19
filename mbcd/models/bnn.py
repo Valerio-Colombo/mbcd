@@ -558,9 +558,9 @@ class BNN:
         ############
         # 1) Calculate gradient and sampling coefficients
         total_num_batch = int(np.floor(inputs.shape[0] / batch_size))
-        scale_coeff = self.generate_grad_coeff_exp(num_batch=total_num_batch)
+        # scale_coeff = self.generate_grad_coeff_exp(num_batch=total_num_batch)
         # scale_coeff = np.full((total_num_batch), 1/total_num_batch)
-        # scale_coeff = self.generate_grad_coeff_poly(num_batch=total_num_batch, poly_grade=4)
+        scale_coeff = self.generate_grad_coeff_poly(num_batch=total_num_batch, poly_grade=1)
         sampling_coeff = np.repeat(scale_coeff, batch_size)
         for i in range(sampling_coeff.shape[0]):
             if sampling_coeff[i] < 0:
@@ -601,7 +601,7 @@ class BNN:
         # holdout_inputs = np.tile(holdout_inputs[None], [self.num_nets, 1, 1])
         # holdout_targets = np.tile(holdout_targets[None], [self.num_nets, 1, 1])
 
-        print('[ BNN ] Training {} | Holdout: {}'.format(inputs.shape, holdout_inputs.shape))
+        print('[ BNN ] Training {} | Holdout: {}'.format(train_inputs.shape, holdout_inputs.shape))
 
         # idxs = np.random.randint(inputs.shape[0], size=[self.num_nets, inputs.shape[0]])
         if hide_progress:

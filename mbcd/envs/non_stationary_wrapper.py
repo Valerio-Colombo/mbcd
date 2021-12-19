@@ -1,7 +1,7 @@
 from gym import Wrapper
 from collections import deque
 from experiments.experiments_enum import ExpType
-from mbcd.envs.envs_enum import SimType, Env
+from mbcd.envs.envs_enum import SimType, Env, EnvType
 
 
 class NonStationaryEnv(Wrapper):
@@ -61,6 +61,8 @@ class NonStationaryEnv(Wrapper):
             print("Step :{}".format(self.counter))
             print("Velocity_Avg: {} - Target Velocity: {}".format(self.forward_vel_avg/100,
                                                                   env_parameters["target_velocity"]))
+            if self.current_task == EnvType.Joint_Malfunction_Drift:
+                print("Malfunction coeff: {}".format(env_parameters["malfunction_mask"]))
             self.forward_vel_avg = 0
 
         self.counter += 1

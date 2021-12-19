@@ -32,6 +32,12 @@ class Dataset:
         inds = np.random.choice(self.size, batch_size, replace=replace)
         return self.obs_buf[inds], self.acts_buf[inds], self.rews_buf[inds], self.next_obs_buf[inds], self.done_buf[inds]
 
+    def sample_biased(self, batch_size, replace=True):
+        #inds = np.random.choice(self.size, batch_size, replace=replace)
+        inds = np.arange(self.size - 3000, self.size)
+        inds = np.random.choice(inds, batch_size, replace=replace)
+        return self.obs_buf[inds], self.acts_buf[inds], self.rews_buf[inds], self.next_obs_buf[inds], self.done_buf[inds]
+
     def sample_chunks(self, chunk_size, window_length):  # lower index are newer data
         chunk_num = int(min(self.size, window_length) / chunk_size)
 
