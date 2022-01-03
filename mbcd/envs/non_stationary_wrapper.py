@@ -1,7 +1,9 @@
+import numpy as np
 from gym import Wrapper
 from collections import deque
 from experiments.experiments_enum import ExpType
 from mbcd.envs.envs_enum import SimType, Env
+from scipy.spatial.transform import Rotation as R
 
 
 class NonStationaryEnv(Wrapper):
@@ -48,6 +50,14 @@ class NonStationaryEnv(Wrapper):
         next_obs, reward, done, info = self.env.step(action)
         # TODO check value of self.current_task for compatibility. Implement to_string()
         info['task'] = self.current_task
+
+        joint_data = self.unwrapped.sim.data.body_xmat.reshape((8,3,3))
+        r = R.from_matrix(joint_data)
+        r_e = r.as_euler('xyz', degrees=True)
+        angle_r_e = r_e[5]
+        if np.abs(angle_r_e[1]) > 80:
+            print("Tipped!")
+            reward -= 10
 
         if self.fix_reward_vel:
             pos_after = self.unwrapped.sim.data.qpos[0]

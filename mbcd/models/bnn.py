@@ -74,6 +74,8 @@ class BNN:
         self.sy_train_in, self.sy_train_targ = None, None
         self.grads, self.graph_vars = None, None
         self.train_op, self.train_op_rescaled, self.mse_loss = None, None, None
+        self.val_mask = np.zeros([4096], dtype=bool)
+        self.val_mask_a = False
 
         # Prediction objects
         self.sy_pred_in2d, self.sy_pred_mean2d_fac, self.sy_pred_var2d_fac = None, None, None
@@ -354,7 +356,7 @@ class BNN:
     #################
 
     # @profile
-    def train(self, inputs, targets,
+    def train(self, inputs, targets, window_size,
               batch_size=32, max_epochs=None, max_epochs_since_update=5,
               hide_progress=False, holdout_ratio=0.0, max_logging=5000, max_grad_updates=None, timer=None,
               max_t=None):
@@ -380,12 +382,52 @@ class BNN:
             self.scaler.fit(inputs)
 
         # Split into training and holdout sets
-        num_holdout = min(int(inputs.shape[0] * holdout_ratio), max_logging)
-        permutation = np.random.permutation(inputs.shape[0])
-        inputs, holdout_inputs = inputs[permutation[num_holdout:]], inputs[permutation[:num_holdout]]
-        targets, holdout_targets = targets[permutation[num_holdout:]], targets[permutation[:num_holdout]]
-        holdout_inputs = np.tile(holdout_inputs[None], [self.num_nets, 1, 1])
-        holdout_targets = np.tile(holdout_targets[None], [self.num_nets, 1, 1])
+        def shift_l(arr, num, fill_value, val_perc):
+            num = -num
+            result = np.empty_like(arr)
+            if num > 0:
+                result[:num] = fill_value
+                result[num:] = arr[:-num]
+            elif num < 0:
+                result[num:] = fill_value
+                result[:num] = arr[-num:]
+            else:
+                result[:] = arr
+            n_val_r = np.sum(result)
+            n_val = int(arr.shape[0] * val_perc)
+            val_to_add = n_val - n_val_r
+
+            i = np.random.choice(-num, val_to_add, replace=False) + arr.shape[0] + num
+            result[i] = 1
+            return result
+
+        N = inputs.shape[0]
+        if N == 4096:
+            print("A")
+            if self.val_mask_a:
+                self.val_mask = shift_l(self.val_mask, window_size, 0, holdout_ratio)
+                inputs, holdout_inputs = inputs[np.invert(self.val_mask)], inputs[self.val_mask]
+                targets, holdout_targets = targets[np.invert(self.val_mask)], targets[self.val_mask]
+                holdout_inputs = np.tile(holdout_inputs[None], [self.num_nets, 1, 1])
+                holdout_targets = np.tile(holdout_targets[None], [self.num_nets, 1, 1])
+            else:
+                self.val_mask_a = True
+
+                num_holdout = min(int(inputs.shape[0] * holdout_ratio), max_logging)
+                permutation = np.random.permutation(inputs.shape[0])
+                inputs, holdout_inputs = inputs[permutation[num_holdout:]], inputs[permutation[:num_holdout]]
+                targets, holdout_targets = targets[permutation[num_holdout:]], targets[permutation[:num_holdout]]
+                holdout_inputs = np.tile(holdout_inputs[None], [self.num_nets, 1, 1])
+                holdout_targets = np.tile(holdout_targets[None], [self.num_nets, 1, 1])
+
+                self.val_mask[permutation[:num_holdout]] = 1
+        else:
+            num_holdout = min(int(inputs.shape[0] * holdout_ratio), max_logging)
+            permutation = np.random.permutation(inputs.shape[0])
+            inputs, holdout_inputs = inputs[permutation[num_holdout:]], inputs[permutation[:num_holdout]]
+            targets, holdout_targets = targets[permutation[num_holdout:]], targets[permutation[:num_holdout]]
+            holdout_inputs = np.tile(holdout_inputs[None], [self.num_nets, 1, 1])
+            holdout_targets = np.tile(holdout_targets[None], [self.num_nets, 1, 1])
 
         print('\n[ BNN ] Training {} | Holdout: {}'.format(inputs.shape, holdout_inputs.shape))
 

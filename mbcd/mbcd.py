@@ -59,20 +59,23 @@ class MBCD:
         return construct_model(name='BNN'+self.run_id+str(id), obs_dim=self.state_dim, act_dim=self.action_dim,
                                num_networks=5, num_elites=2)
 
-    def train(self, is_drifting=False, mask=None, gradient_coeff=None, batch_size=256, batch_window=10240, change_point=0):
+    def train(self, num_new_sample):
         if True:
             X, Y = self.memory.to_train_batch()
             num_samples = X.shape[0]
-            if num_samples >= 2560:
-                self.models[self.current_model].train(X[-2560:], Y[-2560:],
+            window_length = 4096
+            if num_samples >= window_length:
+                self.models[self.current_model].train(X[-window_length:], Y[-window_length:],
                                                       batch_size=256,
                                                       holdout_ratio=0.2,
-                                                      max_epochs_since_update=10)
+                                                      max_epochs_since_update=5,
+                                                      window_size=num_new_sample)
             else:
                 self.models[self.current_model].train(X, Y,
                                                       batch_size=256,
                                                       holdout_ratio=0.2,
-                                                      max_epochs_since_update=10)
+                                                      max_epochs_since_update=5,
+                                                      window_size=num_new_sample)
 
     def get_logprob2(self, x, means, variances):
         '''

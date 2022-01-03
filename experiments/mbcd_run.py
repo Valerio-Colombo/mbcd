@@ -94,7 +94,7 @@ if __name__ == '__main__':
             total_timesteps = change_freq * len(tasks.value["tasks"])
 
         if args.roll == 'm2ac':
-            rollout_schedule = [5000, 20000, 1, 8]
+            rollout_schedule = [5000, 20000, 1, 25]
         else:
             rollout_schedule = [5000, 10000, 1, 1]
         config = {
