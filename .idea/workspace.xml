@@ -1,75 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="604e7849-1962-45f6-b7f7-8b5616da858a" name="Default Changelist" comment="M2AC optimized + Game-MBRL">
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/Good runs Game MBCD/mbcd-test-m2ac_19/events.out.tfevents.1640217076.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/Good runs Game MBCD/mbcd-test-m2ac_20/events.out.tfevents.1640619822.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/Good runs Game MBCD/mbcd-test-m2ac_21/events.out.tfevents.1640648853.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/Good runs Game MBCD/mbcd-test-m2ac_22/events.out.tfevents.1640699556.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/Good runs Game MBCD/mbcd-test-m2ac_23/events.out.tfevents.1640703744.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/Good runs Game MBCD/mbcd-test-m2ac_24/events.out.tfevents.1640703917.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/Good runs Game MBCD/mbcd-test-m2ac_25/events.out.tfevents.1640863656.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/Good runs Game MBCD/mbcd-test-m2ac_26/events.out.tfevents.1640863710.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/Good runs Game MBCD/mbcd-test-m2ac_27/events.out.tfevents.1640873536.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/Good runs Game MBCD/mbcd-test-m2ac_28/events.out.tfevents.1640874287.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/Good runs Game MBCD/mbcd-test-m2ac_29/events.out.tfevents.1640880940.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/Good runs Game MBCD/mbcd-test-m2ac_30/events.out.tfevents.1640888555.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/Good runs Game MBCD/mbcd-test-m2ac_31/events.out.tfevents.1640903475.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/Good runs Game MBCD/mbcd-test-m2ac_32/events.out.tfevents.1640911424.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_1/events.out.tfevents.1639608949.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_10/events.out.tfevents.1640130052.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_11/events.out.tfevents.1640130076.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_12/events.out.tfevents.1640130324.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_13/events.out.tfevents.1640130513.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_14/events.out.tfevents.1640133990.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_15/events.out.tfevents.1640134129.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_16/events.out.tfevents.1640155669.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_17/events.out.tfevents.1640176010.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_18/events.out.tfevents.1640212524.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_2/events.out.tfevents.1639959402.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_3/events.out.tfevents.1639962315.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_4/events.out.tfevents.1639966728.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_5/events.out.tfevents.1639969879.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_6/events.out.tfevents.1639972741.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_7/events.out.tfevents.1639993383.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_8/events.out.tfevents.1639993600.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-m2ac_9/events.out.tfevents.1640126876.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-mbcd_1/events.out.tfevents.1639975603.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-mbcd_2/events.out.tfevents.1639979958.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Archive/Game-MBCD_tests/mbcd-test-mbcd_3/events.out.tfevents.1639984240.valerio-PC" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_0.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_1.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_10.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_11.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_12.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_13.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_14.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_15.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_16.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_17.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_18.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_19.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_2.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_3.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_4.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_5.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_6.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_7.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_8.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_9.gif" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tensorboard.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/mbcd.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/mbcd.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/drift/drift_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/drift/drift_manager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/experiments/experiments_enum.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/experiments_enum.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/experiments/mbcd_run.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/mbcd_run.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mbcd/envs/envs_enum.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/envs/envs_enum.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mbcd/envs/non_stationary_wrapper.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/envs/non_stationary_wrapper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mbcd/mbcd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/mbcd.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mbcd/models/bnn.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/models/bnn.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mbcd/sac_mbcd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/sac_mbcd.py" afterDir="false" />
-    </list>
+    <list default="true" id="604e7849-1962-45f6-b7f7-8b5616da858a" name="Default Changelist" comment="M2AC optimized + Game-MBRL" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
