@@ -51,13 +51,13 @@ class NonStationaryEnv(Wrapper):
         # TODO check value of self.current_task for compatibility. Implement to_string()
         info['task'] = self.current_task
 
-        joint_data = self.unwrapped.sim.data.body_xmat.reshape((8,3,3))
-        r = R.from_matrix(joint_data)
-        r_e = r.as_euler('xyz', degrees=True)
-        angle_r_e = r_e[5]
-        if np.abs(angle_r_e[1]) > 80:
-            print("Tipped!")
-            reward -= 10
+        # joint_data = self.unwrapped.sim.data.body_xmat.reshape((8,3,3))
+        # r = R.from_matrix(joint_data)
+        # r_e = r.as_euler('xyz', degrees=True)
+        # angle_r_e = r_e[5]
+        # if np.abs(angle_r_e[1]) > 80:
+        #     print("Tipped!")
+        #     reward -= 10
 
         if self.fix_reward_vel:
             pos_after = self.unwrapped.sim.data.qpos[0]

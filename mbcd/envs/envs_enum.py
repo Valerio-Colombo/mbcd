@@ -50,8 +50,8 @@ class Env:
 
             elif env_type == EnvType.Joint_Malfunction:
                 param_dict["malfunction_mask"] = np.ones(sim_type.value["action_dim"])
-                param_dict["malfunction_mask"][0] = -1
-                param_dict["malfunction_mask"][1] = -1
+                param_dict["malfunction_mask"][0] = 0
+                param_dict["malfunction_mask"][1] = 0
                 param_dict["target_velocity"] = self.target_velocity
                 param_dict["wind"] = [0, 0, 0, 0, 0, 0]
 
