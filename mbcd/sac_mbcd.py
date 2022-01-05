@@ -556,7 +556,7 @@ class SAC(OffPolicyRLModel):
                     elif self.deepMBCD.counter < 20000:
                         self.model_train_freq = 175  # 250
                         self.gradient_steps = self.model_train_freq * 15
-                    elif self.deepMBCD.counter < 32000:
+                    elif self.deepMBCD.counter < 40000:
                         self.model_train_freq = 250  # 250
                         self.gradient_steps = self.model_train_freq * 10
                     elif self.deepMBCD.counter < 60000:
