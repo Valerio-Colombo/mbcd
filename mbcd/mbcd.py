@@ -37,6 +37,7 @@ class MBCD:
         self.current_model = 0
         self.steps_per_context = {0: 0}
         self.models = {0: self._build_model(0)}
+        self.models_roll = {0: self._build_model_roll(0)}
         self.log_prob = {0: 0.0}
         self.var_mean = {0: 0.0}
         self.S = {0: 0.0, -1: 0.0}  # -1 is statistic for new model
@@ -59,23 +60,39 @@ class MBCD:
         return construct_model(name='BNN'+self.run_id+str(id), obs_dim=self.state_dim, act_dim=self.action_dim,
                                num_networks=5, num_elites=2)
 
+    def _build_model_roll(self, id):
+        if id != 0:
+            return construct_model(name='BNN_roll'+self.run_id+str(id), obs_dim=self.state_dim, act_dim=self.action_dim,
+                                   num_networks=5, num_elites=2, session=self.models_roll[0].sess)
+        return construct_model(name='BNN_roll'+self.run_id+str(id), obs_dim=self.state_dim, act_dim=self.action_dim,
+                               num_networks=5, num_elites=2)
+
     def train(self, num_new_sample):
-        if True:
-            X, Y = self.memory.to_train_batch()
-            num_samples = X.shape[0]
-            window_length = 4096
-            if num_samples >= window_length:
-                self.models[self.current_model].train(X[-window_length:], Y[-window_length:],
-                                                      batch_size=256,
-                                                      holdout_ratio=0.2,
-                                                      max_epochs_since_update=5,
-                                                      window_size=num_new_sample)
-            else:
-                self.models[self.current_model].train(X, Y,
-                                                      batch_size=256,
-                                                      holdout_ratio=0.2,
-                                                      max_epochs_since_update=5,
-                                                      window_size=num_new_sample)
+        # Retrieve experience from memory
+        X, Y = self.memory.to_train_batch()
+        num_samples = X.shape[0]
+
+        # Train BNN net used for the generation of rollout simulations
+        window_length = 4096
+        if num_samples >= window_length:
+            self.models_roll[self.current_model].train(X[-window_length:], Y[-window_length:],
+                                                       batch_size=256,
+                                                       holdout_ratio=0.2,
+                                                       max_epochs_since_update=5,
+                                                       window_size=num_new_sample)
+        else:
+            self.models_roll[self.current_model].train(X, Y,
+                                                       batch_size=256,
+                                                       holdout_ratio=0.2,
+                                                       max_epochs_since_update=5,
+                                                       window_size=num_new_sample)
+
+        # Train BNN for CUSUM statistic
+        self.models[self.current_model].train(X, Y,
+                                              batch_size=256,
+                                              holdout_ratio=0.2,
+                                              max_epochs_since_update=5,
+                                              window_size=num_new_sample)
 
     def get_logprob2(self, x, means, variances):
         '''
@@ -157,7 +174,7 @@ class MBCD:
         for c in range(chunk_num):
             for s in range(chunk_size):
                 l_input = inputs[c, s][None]
-                means, variances = self.models[self.current_model].predict(l_input, factored=True)  # [None]?  [num_model, batch_size, obs_dim+1]
+                means, variances = self.models_roll[self.current_model].predict(l_input, factored=True)  # [None]?  [num_model, batch_size, obs_dim+1]
 
                 obs = inputs[c, s, :(inputs.shape[-1]-self.action_dim)]  # TODO check value precision, float32!
                 means[:, :, 1:] += obs  # TODO Check correctness
@@ -319,12 +336,13 @@ class MBCD:
 
     def predict(self, sa, model=None):
         model = self.current_model if model is None else model
-        mean, var = self.models[model].predict(sa)
+        mean, var = self.models_roll[model].predict(sa)
         return mean
 
     def new_model(self):
         self.steps_per_context[self.num_models] = 0
         self.models[self.num_models] = self._build_model(self.num_models)
+        self.models_roll[self.num_models] = self._build_model_roll(self.num_models)
         self.log_prob[self.num_models] = 0.0
         self.S[self.num_models] = 0.0
         self.var_mean[self.num_models] = 0.0
@@ -337,11 +355,14 @@ class MBCD:
         if not self.test_mode:
             self.save_current()
 
+        old_model_id = self.current_model
         self.current_model = model_id
         # new model
         if load_params_from_init_model:
             #self.sac.load_parameters('weights/'+self.run_id+'init_pi')
             self.memory = Dataset(self.state_dim, self.action_dim, self.memory_capacity)
+            # self.models[self.current_model].load_weights_id(old_model_id)
+            # self.models_roll[self.current_model].load_weights_id(old_model_id)
         # load existent model
         else:
             if self.sac is not None:
@@ -353,12 +374,13 @@ class MBCD:
 
     def save_current(self):
         if self.sac is not None:
-            self.sac.save('weights/'+self.run_id+'pi'+str(self.current_model))  # save SAC
-        self.save_dataset(self.current_model)  # Save transition + rewards
-        self.save_model(self.current_model)  # Save env model
+            self.sac.save('weights/'+self.run_id+'pi'+str(self.current_model))  # Save SAC
+        self.save_dataset(self.current_model)                                   # Save transition + rewards
+        self.save_model(self.current_model)                                     # Save env model
     
     def save_model(self, i):
         self.models[i].save_weights()
+        self.models_roll[i].save_weights()
 
     def save_dataset(self, i):
         with open('weights/'+self.run_id+'data'+str(i), 'wb') as f:
@@ -371,12 +393,14 @@ class MBCD:
     def save_models(self):
         for i in range(self.num_models):
             self.models[i].save_weights()
+            self.models_roll[i].save_weights()
 
     def load(self, num_models, load_policy=True):
         for i in range(num_models):
             if i != 0:
                 self.new_model()
             self.models[i].load_weights()
+            self.models_roll[i].load_weights()
             self.steps_per_context[i] = self.min_steps + 1  # So it will not ignore context detection
         self.load_dataset(self.current_model)
         self.steps_per_context[self.current_model] = self.memory.size+1

@@ -2,13 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="604e7849-1962-45f6-b7f7-8b5616da858a" name="Default Changelist" comment="M2AC optimized + Game-MBRL">
-      <change afterPath="$PROJECT_DIR$/Half_cheetah_0.gif" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/experiments/experiments_enum.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/experiments_enum.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/experiments/mbcd_run.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/mbcd_run.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mbcd/envs/envs_enum.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/envs/envs_enum.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mbcd/envs/non_stationary_wrapper.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/envs/non_stationary_wrapper.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mbcd/mbcd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/mbcd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mbcd/models/bnn.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/models/bnn.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mbcd/sac_mbcd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/sac_mbcd.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -54,7 +53,7 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../clean_code" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
-  <component name="RunManager" selected="Python.m2ac_run_gif">
+  <component name="RunManager" selected="Python.m2ac_run">
     <configuration name="gym_test" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="mbcd" />
       <option name="INTERPRETER_OPTIONS" value="" />

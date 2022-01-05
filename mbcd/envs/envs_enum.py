@@ -40,7 +40,7 @@ class Env:
         if sim_type == SimType.HalfCheetah:
             if env_type == EnvType.Normal:
                 param_dict["malfunction_mask"] = np.ones(sim_type.value["action_dim"])
-                param_dict["target_velocity"] = self.target_velocity  # TODO back to 1.5
+                param_dict["target_velocity"] = self.target_velocity
                 param_dict["wind"] = [0, 0, 0, 0, 0, 0]
 
                 env_parameters_gen["malfunction_mask_0"] = self.param_generator(1)
@@ -50,8 +50,8 @@ class Env:
 
             elif env_type == EnvType.Joint_Malfunction:
                 param_dict["malfunction_mask"] = np.ones(sim_type.value["action_dim"])
-                param_dict["malfunction_mask"][0] = 0
-                param_dict["malfunction_mask"][1] = 0
+                param_dict["malfunction_mask"][0] = -1
+                param_dict["malfunction_mask"][1] = -1
                 param_dict["target_velocity"] = self.target_velocity
                 param_dict["wind"] = [0, 0, 0, 0, 0, 0]
 

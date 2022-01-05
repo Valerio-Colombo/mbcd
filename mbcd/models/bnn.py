@@ -869,6 +869,17 @@ class BNN:
             for i, var in enumerate(all_vars):
                 var.load(params_dict[str(i)])
 
+    def load_weights_id(self, model_id):
+        with self.sess.as_default():
+            name_new = list(self.name)
+            name_new[-1] = str(model_id)
+            name_new = ''.join(name_new)
+
+            params_dict = loadmat('weights/' + name_new + '.mat')
+            all_vars = self.nonoptvars + self.optvars
+            for i, var in enumerate(all_vars):
+                var.load(params_dict[str(i)])
+
     def save(self, savedir, timestep):
         """Saves all information required to recreate this model in two files in savedir
         (or self.model_dir if savedir is None), one containing the model structuure and the other

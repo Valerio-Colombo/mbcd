@@ -181,22 +181,22 @@ class SAC(OffPolicyRLModel):
         self.deepMBCD = None
         if self.mbpo or self.mbcd:
             self.deepMBCD = MBCD(state_dim=self.observation_space.shape[0],
-                                    action_dim=self.action_space.shape[0],
-                                    sac=self,
-                                    n_hidden_units=n_hidden_units_dynamics,
-                                    num_layers=n_layers_dynamics,
-                                    memory_capacity=dynamics_memory_size,
-                                    cusum_threshold=cusum_threshold,
-                                    max_std=max_std,
-                                    num_stds=num_stds,
-                                    run_id=run_id)
+                                 action_dim=self.action_space.shape[0],
+                                 sac=self,
+                                 n_hidden_units=n_hidden_units_dynamics,
+                                 num_layers=n_layers_dynamics,
+                                 memory_capacity=dynamics_memory_size,
+                                 cusum_threshold=cusum_threshold,
+                                 max_std=max_std,
+                                 num_stds=num_stds,
+                                 run_id=run_id)
 
         self.driftManager = DriftHandler(self.model_drift_chunk_size, self.model_drift_window_length)
 
         self.load_pre_trained_model = load_pre_trained_model
         if self.load_pre_trained_model:
             self.deepMBCD.load(num_models=1, load_policy=True)  # load only normal model for now TODO make multi model loading
-            self.learning_starts = -1
+            self.learning_starts = -1  # TODO check if it interferes with new model initialization
 
         self.save_gifs = save_gifs
         self.rollout_mode = rollout_mode
@@ -734,7 +734,7 @@ class SAC(OffPolicyRLModel):
         for j in range(10):  # 10 samples of 10000 instead of 1 of 100000 to not allocate all gpu memory
             #print("iteration MBCD: {}".format(j))
             obs, _, _, _, _ = self.deepMBCD.memory.sample(10000)
-            fake_env = FakeEnv(self.deepMBCD.models[self.deepMBCD.current_model], self.env.spec.id)
+            fake_env = FakeEnv(self.deepMBCD.models_roll[self.deepMBCD.current_model], self.env.spec.id)
             for plan_step in range(self.rollout_length):
                 actions = self.policy_tf.step(obs, deterministic=False)
                 actions = unscale_action(self.action_space, actions)
@@ -773,7 +773,7 @@ class SAC(OffPolicyRLModel):
             start_time_1 = time.clock()
             B_sub_iter = int(B/num_sub_iter)
             obs, _, _, _, _ = self.deepMBCD.memory.sample(B_sub_iter)
-            fake_env = FakeEnv(self.deepMBCD.models[self.deepMBCD.current_model], self.env.spec.id)
+            fake_env = FakeEnv(self.deepMBCD.models_roll[self.deepMBCD.current_model], self.env.spec.id)
             end_time_1 = time.clock()
             # print("Sampling time: {}".format(start_time_1-end_time_1))
             for _ in range(self.rollout_length):
