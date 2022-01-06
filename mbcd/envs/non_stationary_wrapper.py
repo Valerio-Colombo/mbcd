@@ -18,6 +18,7 @@ class NonStationaryEnv(Wrapper):
         self.fix_reward_vel = (self.sim_type == SimType.HalfCheetah) or (self.sim_type == SimType.Hopper)
 
         self.env_task = Env(self.sim_type, self.current_task, self.current_change_freq)  # Get parameters
+        self.avg_vel = 0
 
     @property
     def current_task(self):
@@ -32,8 +33,8 @@ class NonStationaryEnv(Wrapper):
             self.tasks.popleft()
             self.change_freq.popleft()
             self.env_task = Env(self.sim_type, self.current_task, self.current_change_freq)
-
             print("CHANGED TO TASK {} AT STEP {}!".format(self.current_task, self.counter))
+            self.counter = 0
 
         pos_before = self.unwrapped.sim.data.qpos[0]
         env_parameters = self.env_task.get_params()
@@ -51,11 +52,16 @@ class NonStationaryEnv(Wrapper):
             pos_after = self.unwrapped.sim.data.qpos[0]
             forward_vel = (pos_after - pos_before) / self.unwrapped.dt
 
-            # reward -= forward_vel # remove this term
+            reward -= forward_vel # remove this term
             reward += -1 * abs(forward_vel - env_parameters["target_velocity"])
 
+        self.avg_vel += forward_vel
         if not(self.counter % 100):
+            self.avg_vel = self.avg_vel / 100
             print("Step :{}".format(self.counter))
+            print("Target velocity: {}".format(env_parameters["target_velocity"]))
+            print("Actual velocity: {}".format(self.avg_vel))
+            self.avg_vel = 0
 
         self.counter += 1
 

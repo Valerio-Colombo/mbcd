@@ -82,7 +82,7 @@ def main(config):
 if __name__ == '__main__':
 
     if args.env == 'halfcheetah':
-        tasks = ExpType.Normal
+        tasks = ExpType.Base_Switch_Test
         change_freq = tasks.value["change_freq"]
         if isinstance(change_freq, list):
             total_timesteps = sum(tasks.value["change_freq"])
