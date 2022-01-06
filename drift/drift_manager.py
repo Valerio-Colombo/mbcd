@@ -10,7 +10,7 @@ import os
 
 class DriftHandler:
     def __init__(self):
-        self.save_path_root_dir = '/home/valerio/PycharmProjects/mbcd/drift/logs'
+        self.save_path_root_dir = '/media/valerio/93f88e81-c907-4ae8-99d0-345b3c02d308/valerio/MBCD/mbcd/drift/logs'
         date_time = datetime.datetime.now()
         sub_dir = 'Drift_Log-' + \
                   str(date_time.month) + '_' + \
