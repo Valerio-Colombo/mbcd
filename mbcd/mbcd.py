@@ -170,21 +170,26 @@ class MBCD:
     def calculate_logprob_chunks(self, chunk_size, window_length):
         chunk_num, inputs, outputs = self.memory.sample_chunks(chunk_size, window_length)
         log_prob_arr = np.zeros((chunk_num, 5))  # TODO remove hardcoded value for num_network
+        log_prob_arr_cs = np.zeros((chunk_num, 5))
 
         for c in range(chunk_num):
             for s in range(chunk_size):
                 l_input = inputs[c, s][None]
                 means, variances = self.models_roll[self.current_model].predict(l_input, factored=True)  # [None]?  [num_model, batch_size, obs_dim+1]
+                means_cs, variances_cs = self.models[self.current_model].predict(l_input, factored=True)
 
                 obs = inputs[c, s, :(inputs.shape[-1]-self.action_dim)]  # TODO check value precision, float32!
                 means[:, :, 1:] += obs  # TODO Check correctness
+                means_cs[:, :, 1:] += obs
                 true_output = outputs[c, s][None]
 
                 log_prob_arr[c] += self.get_logprob_separated(true_output, means, variances)  # [1, num_model]
+                log_prob_arr_cs[c] += self.get_logprob_separated(true_output, means_cs, variances_cs)
 
             log_prob_arr[c] = log_prob_arr[c] / chunk_size
+            log_prob_arr_cs[c] = log_prob_arr_cs[c] / chunk_size
 
-        return log_prob_arr
+        return log_prob_arr, log_prob_arr_cs
 
     def update_metrics(self, obs, action, reward, next_obs, done):
         obs = obs[None]
@@ -357,12 +362,19 @@ class MBCD:
 
         old_model_id = self.current_model
         self.current_model = model_id
+
+        obs, action, reward, next_obs, done = self.memory.get_last_n(4096)
+
         # new model
         if load_params_from_init_model:
             #self.sac.load_parameters('weights/'+self.run_id+'init_pi')
             self.memory = Dataset(self.state_dim, self.action_dim, self.memory_capacity)
-            # self.models[self.current_model].load_weights_id(old_model_id)
-            # self.models_roll[self.current_model].load_weights_id(old_model_id)
+            self.models[self.current_model].load_weights_id(old_model_id)
+            self.models_roll[self.current_model].load_weights_id(old_model_id)
+            # TEST FOR DRIFTING ENVS
+            for i in range(4096):
+                self.memory.push(obs[i], action[i], reward[i], next_obs[i], done[i])
+
         # load existent model
         else:
             if self.sac is not None:

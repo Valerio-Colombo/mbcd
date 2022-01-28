@@ -62,6 +62,7 @@ class NonStationaryEnv(Wrapper):
         if self.fix_reward_vel:
             pos_after = self.unwrapped.sim.data.qpos[0]
             forward_vel = (pos_after - pos_before) / self.unwrapped.dt
+            # print("DT: {}".format(self.unwrapped.dt))
             self.forward_vel_avg += forward_vel
 
             reward -= forward_vel  # remove this term

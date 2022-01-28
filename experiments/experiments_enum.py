@@ -6,6 +6,9 @@ class ExpType(enum.Enum):
     Normal = {"sim": SimType.HalfCheetah,
               "tasks": [EnvType.Normal],
               "change_freq": [30000]}
+    Normal_hopper = {"sim": SimType.Hopper,
+              "tasks": [EnvType.Normal],
+              "change_freq": [30000]}
     Scheduler_Test = {"sim": SimType.HalfCheetah,
                       "tasks": [EnvType.Normal, EnvType.Joint_Malfunction_Drift, EnvType.Joint_Malfunction],
                       "change_freq": [1000, 500, 1500]}
@@ -16,7 +19,7 @@ class ExpType(enum.Enum):
                "change_freq": 40000}
     Base_Switch_Test = {"sim": SimType.HalfCheetah,
                         "tasks": [EnvType.Normal, EnvType.Joint_Malfunction],
-                        "change_freq": [20000, 20000]}
+                        "change_freq": [30000, 30000]}
     Base_Drift_Switch_Test = {"sim": SimType.HalfCheetah,
                               "tasks": [EnvType.Normal, EnvType.Joint_Malfunction_Drift, EnvType.Joint_Malfunction],
                               "change_freq": [30000, 20000, 1000]}

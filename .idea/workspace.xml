@@ -6,9 +6,10 @@
       <change beforePath="$PROJECT_DIR$/experiments/experiments_enum.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/experiments_enum.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/experiments/mbcd_run.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/mbcd_run.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mbcd/envs/envs_enum.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/envs/envs_enum.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mbcd/envs/non_stationary_wrapper.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/envs/non_stationary_wrapper.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mbcd/mbcd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/mbcd.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mbcd/models/bnn.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/models/bnn.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mbcd/sac_mbcd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/sac_mbcd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mbcd/utils/dataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/utils/dataset.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -115,6 +116,75 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/experiments/mbcd_run.py" />
       <option name="PARAMETERS" value="-algo mbcd -roll m2ac -gif true" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="m2ac_run_hopper" type="PythonConfigurationType" factoryName="Python">
+      <output_file path="$PROJECT_DIR$/../logs/Console_Output/CO_1" is_save="true" />
+      <module name="mbcd" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="LD_LIBRARY_PATH" value="$USER_HOME$/.mujoco/mujoco200/bin:/usr/local/cuda-10.0/lib64" />
+      </envs>
+      <option name="SDK_HOME" value="$PROJECT_DIR$/venv/bin/python" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/experiments/mbcd_run.py" />
+      <option name="PARAMETERS" value="-algo mbcd -roll m2ac -env hopper" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="m2ac_run_hopper_gif" type="PythonConfigurationType" factoryName="Python">
+      <output_file path="$PROJECT_DIR$/../logs/Console_Output/CO_1" is_save="true" />
+      <module name="mbcd" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="LD_LIBRARY_PATH" value="$USER_HOME$/.mujoco/mujoco200/bin:/usr/local/cuda-10.0/lib64" />
+      </envs>
+      <option name="SDK_HOME" value="$PROJECT_DIR$/venv/bin/python" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/experiments/mbcd_run.py" />
+      <option name="PARAMETERS" value="-algo mbcd -roll m2ac -env hopper -gif True" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="m2ac_run_seed" type="PythonConfigurationType" factoryName="Python">
+      <output_file path="$PROJECT_DIR$/../logs/Console_Output/CO_1" is_save="true" />
+      <module name="mbcd" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="LD_LIBRARY_PATH" value="$USER_HOME$/.mujoco/mujoco200/bin:/usr/local/cuda-10.0/lib64" />
+      </envs>
+      <option name="SDK_HOME" value="$PROJECT_DIR$/venv/bin/python" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/experiments/mbcd_run.py" />
+      <option name="PARAMETERS" value="-algo mbcd -roll m2ac -seed 123" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -236,12 +306,15 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python.mbcd_pre_trained" />
-      <item itemvalue="Python.mbcd_run" />
       <item itemvalue="Python.m2ac_run" />
+      <item itemvalue="Python.m2ac_run_seed" />
+      <item itemvalue="Python.m2ac_run_gif" />
+      <item itemvalue="Python.m2ac_run_hopper" />
+      <item itemvalue="Python.m2ac_run_hopper_gif" />
       <item itemvalue="Python.m2ac_run_trained" />
       <item itemvalue="Python.m2ac_run_trained_gif" />
-      <item itemvalue="Python.m2ac_run_gif" />
+      <item itemvalue="Python.mbcd_pre_trained" />
+      <item itemvalue="Python.mbcd_run" />
       <item itemvalue="Python.gym_test" />
       <item itemvalue="Python.results_reader" />
     </list>
@@ -376,17 +449,22 @@
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/mbcd/sac_mbcd.py</url>
+          <line>398</line>
+          <option name="timeStamp" value="20" />
+        </line-breakpoint>
+        <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/mbcd/envs/non_stationary_wrapper.py</url>
-          <line>53</line>
-          <option name="timeStamp" value="7" />
+          <line>32</line>
+          <option name="timeStamp" value="21" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/mbcd/sac_mbcd.py</url>
+          <line>664</line>
+          <option name="timeStamp" value="24" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
-    <watches-manager>
-      <configuration name="PythonConfigurationType">
-        <watch expression="self.unwrapped.data" />
-      </configuration>
-    </watches-manager>
   </component>
 </project>

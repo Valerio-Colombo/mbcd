@@ -14,7 +14,7 @@ class EnvType(enum.Enum):
 
 class SimType(enum.Enum):
     HalfCheetah = {"action_dim": 6, "observation_dim": 17}
-    Hopper = {"action_dim": 0, "observation_dim": 0}  # TODO: add real number of dim
+    Hopper = {"action_dim": 3, "observation_dim": 11}  # TODO: add real number of dim
 
 
 class Env:

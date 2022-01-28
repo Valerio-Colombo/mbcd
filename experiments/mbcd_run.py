@@ -86,7 +86,7 @@ def main(config):
 if __name__ == '__main__':
 
     if args.env == 'halfcheetah':
-        tasks = ExpType.Base_Switch_Test
+        tasks = ExpType.Base_Drift_Switch_Test
         change_freq = tasks.value["change_freq"]
         if isinstance(change_freq, list):
             total_timesteps = sum(tasks.value["change_freq"])
@@ -94,7 +94,7 @@ if __name__ == '__main__':
             total_timesteps = change_freq * len(tasks.value["tasks"])
 
         if args.roll == 'm2ac':
-            rollout_schedule = [5000, 20000, 1, 25]
+            rollout_schedule = [5000, 20000, 1, 10]
         else:
             rollout_schedule = [5000, 10000, 1, 1]
         config = {
@@ -113,7 +113,34 @@ if __name__ == '__main__':
                 'run_id':'{}-halfcheetah-ns-paper{}'.format(args.algo, str(SEED)),
                 'total_timesteps': total_timesteps
         }
-
+    # elif args.env == "hopper":
+    #     tasks = ExpType.Normal_hopper
+    #     change_freq = tasks.value["change_freq"]
+    #     if isinstance(change_freq, list):
+    #         total_timesteps = sum(tasks.value["change_freq"])
+    #     else:
+    #         total_timesteps = change_freq * len(tasks.value["tasks"])
+    #
+    #     if args.roll == 'm2ac':
+    #         rollout_schedule = [5000, 20000, 1, 25]
+    #     else:
+    #         rollout_schedule = [5000, 10000, 1, 1]
+    #     config = {
+    #         'env': NonStationaryEnv(gym.envs.make('Hopper-v3'), tasks=tasks),
+    #         'rollout_schedule': rollout_schedule,
+    #         'batch_size': 256,
+    #         'gradient_steps': 5000,
+    #         'target_entropy': 'auto',
+    #         'ent_coef': 'auto',
+    #         'max_std': 0.5,
+    #         'num_stds': 2.0,
+    #         'n_hidden_units_dynamics': 200,
+    #         'n_layers_dynamics': 4,
+    #         'dynamics_memory_size': 100000,
+    #         'cusum_threshold': 100,
+    #         'run_id': '{}-halfcheetah-ns-paper{}'.format(args.algo, str(SEED)),
+    #         'total_timesteps': total_timesteps
+    #     }
 
     main(config)
 

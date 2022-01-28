@@ -72,7 +72,7 @@ class SAC(OffPolicyRLModel):
                 gamma=0.99,
                 learning_rate=3e-4,
                 buffer_size=1000000,
-                learning_starts=256,
+                learning_starts=256,  # 256
                 train_freq=1,
                 batch_size=256,
                 tau=0.005,
@@ -169,11 +169,12 @@ class SAC(OffPolicyRLModel):
 
         self.model_drift_chunk_size = 256  # same as batch size to optimize calculus
         self.model_drift_freq = 256
-        self.model_drift_threshold = 15000
+        self.model_drift_threshold = 5000
         self.model_drift_window_length = 10240
         self.drifting = False
 
         self.ep_num = 0
+        self.prev_ep_count = 0
 
         if _init_setup_model:
             self.setup_model()
@@ -507,10 +508,13 @@ class SAC(OffPolicyRLModel):
                 if self.save_gifs:
                     frames.append(self.env.render(mode='rgb_array'))
                     if done:
-                        filename_gif = "Half_cheetah_" + str(self.ep_num) + ".gif"
-                        save_frames_as_gif(frames, filename=filename_gif)
-                        print("Gif saved successfully")
+                        if self.deepMBCD.counter-self.prev_ep_count > 100:
+                            filename_gif = "Half_cheetah_" + str(self.ep_num) + ".gif"
+                            save_frames_as_gif(frames, filename=filename_gif)
+                            print("Gif saved successfully")
+                            print("Episode was {} steps long".format(self.deepMBCD.counter-self.prev_ep_count))
 
+                        self.prev_ep_count = self.deepMBCD.counter
                         self.ep_num += 1
                         frames = []
 
@@ -569,12 +573,17 @@ class SAC(OffPolicyRLModel):
 
 
                     if (self.deepMBCD.counter % self.model_drift_freq == 0) and (self.deepMBCD.counter >= self.model_drift_threshold):
-                        log_prob_chunks = self.deepMBCD.calculate_logprob_chunks(self.model_drift_chunk_size, self.model_drift_window_length)
+                        log_prob_chunks, log_prob_chunks_cs = self.deepMBCD.calculate_logprob_chunks(self.model_drift_chunk_size, self.model_drift_window_length)
 
                         suffix = str(self.deepMBCD.counter) + "_" + str(self.deepMBCD.current_model)
                         print("Saving drift log...")
                         self.driftManager.save_drift_log(log_prob_chunks, filename_suffix=suffix)
                         print("Drift log saved")
+
+                        suffix_cs = str(self.deepMBCD.counter) + "_" + str(self.deepMBCD.current_model) + "_CUSUM"
+                        print("Saving drift log CUSUM...")
+                        self.driftManager.save_drift_log(log_prob_chunks_cs, filename_suffix=suffix_cs)
+                        print("Drift log CUSUM saved")
 
                         # print("Starting regression...")
                         # #drift, change_point, mask = self.driftManager.check_env_drift(log_prob_chunks)

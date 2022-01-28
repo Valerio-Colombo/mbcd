@@ -58,6 +58,10 @@ class Dataset:
 
         return chunk_num, chunk_arr_input, chunk_arr_output
 
+    def get_last_n(self, n):
+        # obs, action, reward, next_obs, done
+        return self.obs_buf[-n:], self.acts_buf[-n:], self.rews_buf[-n:], self.next_obs_buf[-n:], self.done_buf[-n:]
+
     def to_train_batch(self, normalization=False):
         inds = np.arange(self.size)
 
