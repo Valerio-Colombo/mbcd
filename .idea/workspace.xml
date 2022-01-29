@@ -5813,9 +5813,9 @@
       <method v="2" />
     </configuration>
     <list>
+      <item itemvalue="Python.gym_test" />
       <item itemvalue="Python.mbcd_pre_trained" />
       <item itemvalue="Python.mbcd_run" />
-      <item itemvalue="Python.gym_test" />
       <item itemvalue="Python.results_reader" />
     </list>
     <recent_temporary>
