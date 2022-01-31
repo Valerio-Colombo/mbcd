@@ -23,7 +23,7 @@ class Env:
         self.env_type = env_type
         self.change_freq = change_freq
 
-        self.target_velocity = 1.5
+        self.target_velocity = 2.5
         self.target_velocity_drift = 3.5
         self.env_parameters, self.env_parameters_gen = self._init_parameters(sim_type, env_type)
 

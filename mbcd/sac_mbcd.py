@@ -557,32 +557,32 @@ class SAC(OffPolicyRLModel):
                     else:
                         self.model_train_freq = 2000
 
-                    # if (self.deepMBCD.counter % self.model_drift_freq == 0) and (self.deepMBCD.counter >= self.model_drift_threshold):
-                    #     log_prob_chunks = self.deepMBCD.calculate_logprob_chunks(self.model_drift_chunk_size, self.model_drift_window_length)
-                    #
-                    #     suffix = str(self.deepMBCD.counter) + "_" + str(self.deepMBCD.current_model)
-                    #     print("Saving drift log...")
-                    #     self.driftManager.save_drift_log(log_prob_chunks, filename_suffix=suffix)
-                    #     print("Drift log saved")
-                    #
-                    #     print("Starting regression...")
-                    #     #drift, change_point, mask = self.driftManager.check_env_drift(log_prob_chunks)
-                    #     drift = False
-                    #     print("Regression ended")
-                    #
-                    #     if drift:
-                    #         self.drifting = True
-                    #         batch_size = 4096
-                    #         change_point = np.rint(change_point/(batch_size/self.model_drift_chunk_size))
-                    #
-                    #         self.deepMBCD.train(is_drifting=self.drifting,
-                    #                             mask=mask,
-                    #                             gradient_coeff=self.driftManager.grad_coeff,
-                    #                             batch_size=batch_size,
-                    #                             batch_window=self.model_drift_window_length,
-                    #                             change_point=change_point)
-                    #     else:
-                    #         self.drifting = False
+                    if (self.deepMBCD.counter % self.model_drift_freq == 0) and (self.deepMBCD.counter >= self.model_drift_threshold):
+                        log_prob_chunks = self.deepMBCD.calculate_logprob_chunks(self.model_drift_chunk_size, self.model_drift_window_length)
+
+                        suffix = str(self.deepMBCD.counter) + "_" + str(self.deepMBCD.current_model)
+                        print("Saving drift log...")
+                        self.driftManager.save_drift_log(log_prob_chunks, filename_suffix=suffix)
+                        print("Drift log saved")
+
+                        # print("Starting regression...")
+                        # #drift, change_point, mask = self.driftManager.check_env_drift(log_prob_chunks)
+                        # drift = False
+                        # print("Regression ended")
+                        #
+                        # if drift:
+                        #     self.drifting = True
+                        #     batch_size = 4096
+                        #     change_point = np.rint(change_point/(batch_size/self.model_drift_chunk_size))
+                        #
+                        #     self.deepMBCD.train(is_drifting=self.drifting,
+                        #                         mask=mask,
+                        #                         gradient_coeff=self.driftManager.grad_coeff,
+                        #                         batch_size=batch_size,
+                        #                         batch_window=self.model_drift_window_length,
+                        #                         change_point=change_point)
+                        # else:
+                        #     self.drifting = False
 
                     if ((changed and self.deepMBCD.counter > 10) or (self.deepMBCD.counter % self.model_train_freq == 0)) and (not self.drifting):
                         if not self.deepMBCD.test_mode:
