@@ -169,7 +169,7 @@ class SAC(OffPolicyRLModel):
 
         self.model_drift_chunk_size = 256  # same as batch size to optimize calculus
         self.model_drift_freq = 256
-        self.model_drift_threshold = 5000
+        self.model_drift_threshold = 15000
         self.model_drift_window_length = 10240
         self.drifting = False
 

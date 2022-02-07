@@ -1,3 +1,4 @@
+import copy
 import random
 import numpy as np
 import pandas as pd
@@ -73,7 +74,7 @@ class MBCD:
         num_samples = X.shape[0]
 
         # Train BNN net used for the generation of rollout simulations
-        window_length = 4096
+        window_length = 8192
         if num_samples >= window_length:
             self.models_roll[self.current_model].train(X[-window_length:], Y[-window_length:],
                                                        batch_size=256,
@@ -231,7 +232,7 @@ class MBCD:
         if maxm != 0:
             print("CUSUM Stats: {}, t: {}".format(self.S.values(), self.counter))
 
-        if maxm > self.threshold:
+        if maxm > self.threshold:  # TEST
             changed = True
             self.memory.remove_last_n(n=100)  # Remove last experiences, as they may be from different context
 
@@ -345,9 +346,12 @@ class MBCD:
         return mean
 
     def new_model(self):
-        self.steps_per_context[self.num_models] = 0
+        self.steps_per_context[self.num_models] = self.steps_per_context[self.current_model]
+        self.min_steps = self.min_steps + self.steps_per_context[self.num_models]  # TEST ONLY TODO REMOVE!
         self.models[self.num_models] = self._build_model(self.num_models)
         self.models_roll[self.num_models] = self._build_model_roll(self.num_models)
+        # self.models[self.num_models] = self.models[self.current_model]
+        # self.models_roll[self.num_models] = self.models_roll[self.current_model]
         self.log_prob[self.num_models] = 0.0
         self.S[self.num_models] = 0.0
         self.var_mean[self.num_models] = 0.0
@@ -363,18 +367,18 @@ class MBCD:
         old_model_id = self.current_model
         self.current_model = model_id
 
+        print("Old model ID: {} - New model ID: {}".format(old_model_id, self.current_model))
+
         obs, action, reward, next_obs, done = self.memory.get_last_n(4096)
 
         # new model
         if load_params_from_init_model:
-            #self.sac.load_parameters('weights/'+self.run_id+'init_pi')
             self.memory = Dataset(self.state_dim, self.action_dim, self.memory_capacity)
             self.models[self.current_model].load_weights_id(old_model_id)
             self.models_roll[self.current_model].load_weights_id(old_model_id)
             # TEST FOR DRIFTING ENVS
             for i in range(4096):
                 self.memory.push(obs[i], action[i], reward[i], next_obs[i], done[i])
-
         # load existent model
         else:
             if self.sac is not None:
