@@ -69,24 +69,27 @@ class MBCD:
                                num_networks=5, num_elites=2)
 
     def train(self, num_new_sample):
+        print("Training at timestep: {}".format(self.counter))
+
         # Retrieve experience from memory
         X, Y = self.memory.to_train_batch()
         num_samples = X.shape[0]
 
         # Train BNN net used for the generation of rollout simulations
         window_length = 8192
-        if num_samples >= window_length:
-            self.models_roll[self.current_model].train(X[-window_length:], Y[-window_length:],
-                                                       batch_size=256,
-                                                       holdout_ratio=0.2,
-                                                       max_epochs_since_update=5,
-                                                       window_size=num_new_sample)
-        else:
-            self.models_roll[self.current_model].train(X, Y,
-                                                       batch_size=256,
-                                                       holdout_ratio=0.2,
-                                                       max_epochs_since_update=5,
-                                                       window_size=num_new_sample)
+        if self.current_model == 0 or num_samples > 4096:
+            if num_samples >= window_length:
+                self.models_roll[self.current_model].train(X[-window_length:], Y[-window_length:],
+                                                           batch_size=256,
+                                                           holdout_ratio=0.2,
+                                                           max_epochs_since_update=5,
+                                                           window_size=num_new_sample)
+            else:
+                self.models_roll[self.current_model].train(X, Y,
+                                                           batch_size=256,
+                                                           holdout_ratio=0.2,
+                                                           max_epochs_since_update=5,
+                                                           window_size=num_new_sample)
 
         # Train BNN for CUSUM statistic
         self.models[self.current_model].train(X, Y,
@@ -232,7 +235,7 @@ class MBCD:
         if maxm != 0:
             print("CUSUM Stats: {}, t: {}".format(self.S.values(), self.counter))
 
-        if maxm > self.threshold:  # TEST
+        if maxm > self.threshold:
             changed = True
             self.memory.remove_last_n(n=100)  # Remove last experiences, as they may be from different context
 
@@ -346,17 +349,13 @@ class MBCD:
         return mean
 
     def new_model(self):
-        self.steps_per_context[self.num_models] = self.steps_per_context[self.current_model]
+        self.steps_per_context[self.num_models] = 5000
         self.min_steps = self.min_steps + self.steps_per_context[self.num_models]  # TEST ONLY TODO REMOVE!
         self.models[self.num_models] = self._build_model(self.num_models)
-        self.models_roll[self.num_models] = self._build_model_roll(self.num_models)
-        # self.models[self.num_models] = self.models[self.current_model]
-        # self.models_roll[self.num_models] = self.models_roll[self.current_model]
+        self.models_roll[self.num_models] = self.models_roll[self.current_model]
         self.log_prob[self.num_models] = 0.0
         self.S[self.num_models] = 0.0
         self.var_mean[self.num_models] = 0.0
-        #self.maxes[self.num_models] = 0.0
-        #self.disc[self.num_models] = 0.0
         self.num_models += 1
         return self.num_models - 1
 
@@ -369,21 +368,64 @@ class MBCD:
 
         print("Old model ID: {} - New model ID: {}".format(old_model_id, self.current_model))
 
-        obs, action, reward, next_obs, done = self.memory.get_last_n(4096)
-
         # new model
         if load_params_from_init_model:
             self.memory = Dataset(self.state_dim, self.action_dim, self.memory_capacity)
-            self.models[self.current_model].load_weights_id(old_model_id)
-            self.models_roll[self.current_model].load_weights_id(old_model_id)
-            # TEST FOR DRIFTING ENVS
-            for i in range(4096):
-                self.memory.push(obs[i], action[i], reward[i], next_obs[i], done[i])
         # load existent model
         else:
             if self.sac is not None:
                 self.sac.load_parameters('weights/'+self.run_id+'pi'+str(self.current_model))
             self.load_dataset(self.current_model)
+
+    def reload_training(self, old_model_id):
+        for i in range(self.steps_per_context[old_model_id]):
+            print("{} of {}".format(i, self.steps_per_context[old_model_id]))
+            if i < 250:
+                model_train_freq = 10  # 10
+            elif i < 5000:
+                model_train_freq = 100  # 100
+            elif i < 20000:
+                model_train_freq = 175  # 250
+            elif i < 40000:
+                model_train_freq = 250  # 250
+            elif i < 60000:
+                model_train_freq = 500  # 500
+            else:
+                model_train_freq = 2000
+
+            if i!=0 and i % model_train_freq == 0:
+                self.train_r(counter=i, num_new_sample=model_train_freq)
+
+    def train_r(self, counter, num_new_sample):
+        print("Training(reload) at timestep: {}".format(self.counter))
+
+        # Retrieve experience from memory
+        X, Y = self.memory.to_train_batch()
+        X = X[-counter:]
+        Y = Y[-counter:]
+        num_samples = X.shape[0]
+
+        # Train BNN net used for the generation of rollout simulations
+        window_length = 8192
+        if num_samples >= window_length:
+            self.models_roll[self.current_model].train(X[-window_length:], Y[-window_length:],
+                                                       batch_size=256,
+                                                       holdout_ratio=0.2,
+                                                       max_epochs_since_update=5,
+                                                       window_size=num_new_sample)
+        else:
+            self.models_roll[self.current_model].train(X, Y,
+                                                       batch_size=256,
+                                                       holdout_ratio=0.2,
+                                                       max_epochs_since_update=5,
+                                                       window_size=num_new_sample)
+
+        # Train BNN for CUSUM statistic
+        self.models[self.current_model].train(X, Y,
+                                              batch_size=256,
+                                              holdout_ratio=0.2,
+                                              max_epochs_since_update=5,
+                                              window_size=num_new_sample)
 
     def add_experience(self, obs, actions, rewards, next_obs, dones):
         self.memory.push(obs, actions, rewards, next_obs, dones)

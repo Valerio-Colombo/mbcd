@@ -88,7 +88,7 @@ class SAC(OffPolicyRLModel):
                 policy_kwargs=None,
                 full_tensorboard_log=False,
                 seed=None,
-                n_cpu_tf_sess=None,
+                n_cpu_tf_sess=1,
                 mbpo=True,
                 rollout_schedule=[20e3, 100e3, 1, 5],
                 mbcd=True,
@@ -169,8 +169,8 @@ class SAC(OffPolicyRLModel):
 
         self.model_drift_chunk_size = 256  # same as batch size to optimize calculus
         self.model_drift_freq = 256
-        self.model_drift_threshold = 15000
-        self.model_drift_window_length = 10240
+        self.model_drift_threshold = 15000  #15000
+        self.model_drift_window_length = 10240 #10240
         self.drifting = False
 
         self.ep_num = 0
@@ -544,8 +544,8 @@ class SAC(OffPolicyRLModel):
 
                     if changed:
                         # Reset buffer
-                        del self.replay_buffer._storage[:]
-                        self.replay_buffer._next_idx = 0
+                        # del self.replay_buffer._storage[:]
+                        # self.replay_buffer._next_idx = 0
                         print("DETECTED CONTEXT CHANGED TO {} AT STEP {}".format(self.deepMBCD.current_model, step))
                         self.drifting = False
 
@@ -604,7 +604,7 @@ class SAC(OffPolicyRLModel):
                         # else:
                         #     self.drifting = False
 
-                    if ((changed and self.deepMBCD.counter > 10) or (self.deepMBCD.counter % self.model_train_freq == 0)) and (not self.drifting):
+                    if ((self.deepMBCD.counter % self.model_train_freq == 0)) and (not self.drifting):  # (changed and self.deepMBCD.counter > 10) or
                         if not self.deepMBCD.test_mode:
                             self.deepMBCD.train(num_new_sample=self.model_train_freq)
 
