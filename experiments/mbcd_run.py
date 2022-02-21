@@ -86,7 +86,7 @@ def main(config):
 if __name__ == '__main__':
 
     if args.env == 'halfcheetah':
-        tasks = ExpType.Base_Switch_Test
+        tasks = ExpType.Base_Switch_Test_Vel
         change_freq = tasks.value["change_freq"]
         if isinstance(change_freq, list):
             total_timesteps = sum(tasks.value["change_freq"])
@@ -109,7 +109,7 @@ if __name__ == '__main__':
                 'n_hidden_units_dynamics': 200,
                 'n_layers_dynamics': 4,
                 'dynamics_memory_size': 100000,
-                'cusum_threshold': 100,
+                'cusum_threshold': 50,
                 'run_id':'{}-halfcheetah-ns-paper{}'.format(args.algo, str(SEED)),
                 'total_timesteps': total_timesteps
         }
