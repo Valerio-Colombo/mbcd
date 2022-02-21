@@ -76,7 +76,14 @@ class MBCD:
         num_samples = X.shape[0]
 
         # Train BNN net used for the generation of rollout simulations
-        window_length = 8192
+        if self.current_model == 0:
+            if num_samples < 20000:
+                window_length = 4096
+            else:
+                window_length = max(8192, 4096 + num_samples - 20000)
+        else:
+            window_length = 8192
+
         if self.current_model == 0 or num_samples > 4096:
             if num_samples >= window_length:
                 self.models_roll[self.current_model].train(X[-window_length:], Y[-window_length:],
