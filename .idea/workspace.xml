@@ -6,9 +6,7 @@
       <change beforePath="$PROJECT_DIR$/experiments/experiments_enum.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/experiments_enum.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/experiments/mbcd_run.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/mbcd_run.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mbcd/envs/envs_enum.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/envs/envs_enum.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mbcd/envs/non_stationary_wrapper.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/envs/non_stationary_wrapper.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mbcd/mbcd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/mbcd.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mbcd/sac_mbcd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mbcd/sac_mbcd.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,7 +51,7 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$/CL_mbcd.py" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
-  <component name="RunManager" selected="Python.m2ac_run">
+  <component name="RunManager" selected="Python.experiments_sequence">
     <configuration name="experiments_sequence" type="PythonConfigurationType" factoryName="Python">
       <output_file path="$PROJECT_DIR$/../logs/Console_Output/CO_1" is_save="true" />
       <module name="mbcd" />
@@ -69,7 +67,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/CL_mbcd.py" />
-      <option name="PARAMETERS" value="-iter 3 -roll m2ac" />
+      <option name="PARAMETERS" value="-iter 2 -roll m2ac" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
