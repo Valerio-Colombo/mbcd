@@ -14,9 +14,15 @@ class ExpType(enum.Enum):
     Base_Switch_Test = {"sim": SimType.HalfCheetah,
                         "tasks": [EnvType.Normal, EnvType.Joint_Malfunction],
                         "change_freq": [30000, 30000]}
+    Base_Switch_Test_Vel = {"sim": SimType.HalfCheetah,
+                            "tasks": [EnvType.Normal, EnvType.Velocity],
+                            "change_freq": [30000, 30000]}
     Base_Drift_Switch_Test = {"sim": SimType.HalfCheetah,
                               "tasks": [EnvType.Normal, EnvType.Joint_Malfunction_Drift, EnvType.Joint_Malfunction],
                               "change_freq": [30000, 20000, 1000]}
+    Base_Drift_Switch_Test_Vel = {"sim": SimType.HalfCheetah,
+                              "tasks": [EnvType.Normal, EnvType.Velocity_Drift],
+                              "change_freq": [30000, 30000]}
     Base_Wind_Test = {"sim": SimType.HalfCheetah,
                       "tasks": [EnvType.Wind],
                       "change_freq": 40000}
