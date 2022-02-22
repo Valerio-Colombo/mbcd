@@ -567,9 +567,9 @@ class SAC(OffPolicyRLModel):
                         print("Saving drift log...")
                         self.driftManager.save_drift_log(log_prob_chunks, filename_suffix=suffix)
                         print("Drift log saved")
-                        print("Starting regression...")
+                        # print("Starting regression...")
 
-                        self.driftManager.check_env_drift(log_prob_chunks)
+                        # self.driftManager.check_env_drift(log_prob_chunks)
 
                     # Store transition in the replay buffer.
                     if self.deepMBCD.counter < 5000:
